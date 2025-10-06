@@ -1,6 +1,8 @@
 # Backend
 Language : Python
 
+Python version : 3.12.x
+
 FrameWork : Flask
 
 Library : SocketIO
