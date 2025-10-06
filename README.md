@@ -1,21 +1,12 @@
-# OSSD_project
-오픈소스 소프트웨어 프로젝트
+# Backend
+Language : Python
 
-조장 : 김찬진
+FrameWork : Flask
 
-조원 : 강민규, 
+Library : SocketIO
 
-## Subject
-공유 모빌리티를 고려한 경로 찾기 시스템
-
-## Part
-Front-end : React.js
-
-
-Back-end : Python Flask
-
-## Find Path Algorithm
-CCH algorithm : Customizable Contraction Hiearchies
-
-## Data
-따릉이, 지쿠터, 도시 네트워크
+## Major Function
+1. Find Path
+2. Data Preprocessing
+3. Send node info
+4. Request processing
