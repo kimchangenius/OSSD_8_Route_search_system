@@ -1,0 +1,9 @@
+python-socketio==5.11.4
+python-engineio==4.9.1
+sanic==23.12.1
+pandas==2.2.3
+networkx==3.3
+haversine==2.9.0
+scipy==1.14.1
+scikit-learn==1.5.0
+numpy==1.26.4
