@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from "react";
-import * as io from "socket.io-client";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -8,7 +7,7 @@ import LCanvasLayer from "./L.CanvasLayer";
 
 import './App.css';
 
-const SOCKET_URL = "http://localhost:5000";
+const API_URL = "http://localhost:5001/api";
 
 const Maptiler_Key = "DFFxHHmQRoAl3CPIlnBb";
 
@@ -21,8 +20,7 @@ const mapTilerStyles = {
 };
 
 function App() {
-  // Socket
-  const [socket, setSocket] = useState(null);
+  // API 상태
   const [isConnected, setIsConnected] = useState(false);
 
   // Road Map
@@ -36,52 +34,48 @@ function App() {
   const [seoulNode, setSeoulNode] = useState([]);
   const [bicycleNode, setBicycleNode] = useState([]);
 
+  // API로 노드 데이터 가져오기
   useEffect(() => {
-    const new_socket = io.connect(SOCKET_URL, {transports: ["websocket"]});
-    setSocket(new_socket);
-
-    new_socket.on("connect", () => {
-      console.log("Connected to server");
-      setIsConnected(true);
-      new_socket.emit("get_nodes");
-    });
-
-    new_socket.on("disconnect", () => {
-      console.log("Disconnected from server");
-    });
-
-    new_socket.on("nodes_response", (nodes) => {
-      console.log("Nodes received:", nodes);
-      if (nodes && nodes.length > 0) {
-        // type에 따라 노드 분류
-        const seoulNodes = nodes
-          .filter((node) => node.type === "traffic")
-          .map((node) => ({
-            lat: node.lat,
-            lon: node.lon,
-            id: Number(node.id),
-            type: node.type
-          }));
+    const fetchNodes = async () => {
+      try {
+        const response = await fetch(`${API_URL}/nodes`);
+        const data = await response.json();
         
-        const bicycleNodes = nodes
-          .filter((node) => node.type === "bicycle_station")
-          .map((node) => ({
-            lat: node.lat,
-            lon: node.lon,
-            id: Number(node.id),
-            type: node.type
-          }));
+        console.log("Nodes received:", data);
         
-        setSeoulNode(seoulNodes);
-        setBicycleNode(bicycleNodes);
-        
-        console.log(`Traffic nodes: ${seoulNodes.length}, Bicycle nodes: ${bicycleNodes.length}`);
+        if (data.nodes && data.nodes.length > 0) {
+          // type에 따라 노드 분류
+          const trafficNodes = data.nodes
+            .filter((node) => node.type === "traffic")
+            .map((node) => ({
+              lat: node.lat,
+              lon: node.lon,
+              id: Number(node.id),
+              type: node.type
+            }));
+          
+          const bicycleNodes = data.nodes
+            .filter((node) => node.type === "bicycle_station")
+            .map((node) => ({
+              lat: node.lat,
+              lon: node.lon,
+              id: Number(node.id),
+              type: node.type
+            }));
+          
+          setSeoulNode(trafficNodes);
+          setBicycleNode(bicycleNodes);
+          setIsConnected(true);
+          
+          console.log(`Traffic nodes: ${trafficNodes.length}, Bicycle nodes: ${bicycleNodes.length}`);
+        }
+      } catch (error) {
+        console.error("Failed to fetch nodes:", error);
+        setIsConnected(false);
       }
-    });
-
-    return () => {
-      new_socket.disconnect();
     };
+
+    fetchNodes();
   }, []);
 
   // Canvas Layer 렌더링을 위한 별도 useEffect
