@@ -37,7 +37,6 @@ async def add_cors_headers(request, response):
 
 @sio.on("connect")
 async def connect(sid, environ):
-    global session_dict
     session_dict[sid] = {}
     print("connect", f"(sid : {sid})")
     await sio.emit("connection_response", "handshake success", room=sid)
@@ -49,11 +48,43 @@ async def disconnect(sid):
         del session_dict[sid]
     print("disconnect", f"(sid : {sid})")
 
-
-@sio.on("find_path")
-async def find_path_socket(sid, data):
+# Node 조회
+@sio.on("get_nodes")
+async def get_nodes(sid, data):
     """
-    Socket.IO를 통한 경로 탐색
+    그래프의 모든 노드 정보를 반환
+    
+    Response (emit):
+    [
+        {"id": node_id, "lat": lat, "lon": lon},
+        ...
+    ]
+    """
+    try:
+        nodes = []
+        
+        # 그래프의 모든 노드 정보를 가져옴
+        for node_id, node_data in graph.nodes(data=True):
+            nodes.append({
+                "id": node_id,
+                "lat": node_data["lat"],
+                "lon": node_data["lon"]
+            })
+        
+        # 클라이언트에 노드 정보 전송
+        await sio.emit("nodes_response", nodes, room=sid)
+        print(f"nodes_response sent (sid: {sid}): {len(nodes)} nodes")
+    
+    except Exception as e:
+        logger.error(f"노드 조회 오류 (sid: {sid}): {str(e)}")
+        await sio.emit("nodes_response", [], room=sid)
+
+
+# 경로 찾기
+@sio.on("find_path")
+async def find_path_handler(sid, data):
+    """
+    경로 탐색 이벤트 처리
     
     Request Data:
     {
@@ -63,11 +94,9 @@ async def find_path_socket(sid, data):
     
     Response (emit):
     {
-        "success": bool,
         "path": List[int],           # 경로 노드 ID 리스트
         "distance": float,           # 총 거리 (km)
-        "coordinates": List[tuple],  # 좌표 리스트
-        "message": str
+        "coordinates": List[tuple]   # 좌표 리스트
     }
     """
     try:
@@ -76,127 +105,28 @@ async def find_path_socket(sid, data):
         
         print(f"find_path request (sid: {sid}): start={start_id}, goal={goal_id}")
         
-        # 입력 검증
-        if start_id is None or goal_id is None:
-            await sio.emit("find_path_response", {
-                "success": False,
-                "message": "start_id와 goal_id가 필요합니다."
-            }, room=sid)
-            return
-        
-        # 경로 탐색
+        # path_finder.find_path 함수 실행
         result = path_finder.find_path(graph, start_id, goal_id)
         
-        # 결과 전송
-        await sio.emit("find_path_response", result, room=sid)
-        print(f"find_path response sent (sid: {sid}): {result['message']}")
+        # success와 message 제외한 나머지만 추출
+        response = {
+            "path": result.get("path", []),
+            "distance": result.get("distance", 0),
+            "coordinates": result.get("coordinates", [])
+        }
+        
+        # 클라이언트에 결과 전송
+        await sio.emit("find_path_response", response, room=sid)
+        print(f"find_path_response sent (sid: {sid}): {len(response['path'])} nodes, {response['distance']}km")
     
     except Exception as e:
         logger.error(f"경로 탐색 오류 (sid: {sid}): {str(e)}")
         await sio.emit("find_path_response", {
-            "success": False,
-            "message": f"서버 오류: {str(e)}"
+            "path": [],
+            "distance": 0,
+            "coordinates": []
         }, room=sid)
 
-
-@sio.on("get_graph_info")
-async def get_graph_info_socket(sid, data):
-    """
-    Socket.IO를 통한 그래프 정보 조회
-    
-    Response (emit):
-    {
-        "success": bool,
-        "num_nodes": int,
-        "num_edges": int,
-        "node_types": dict
-    }
-    """
-    try:
-        # 노드 타입별 개수 계산
-        node_types = {}
-        for node_id, data in graph.nodes(data=True):
-            node_type = data.get('type', 'unknown')
-            node_types[node_type] = node_types.get(node_type, 0) + 1
-        
-        result = {
-            "success": True,
-            "num_nodes": graph.number_of_nodes(),
-            "num_edges": graph.number_of_edges(),
-            "node_types": node_types
-        }
-        
-        await sio.emit("graph_info_response", result, room=sid)
-        print(f"graph_info response sent (sid: {sid}): {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges")
-    
-    except Exception as e:
-        logger.error(f"그래프 정보 조회 오류 (sid: {sid}): {str(e)}")
-        await sio.emit("graph_info_response", {
-            "success": False,
-            "message": f"서버 오류: {str(e)}"
-        }, room=sid)
-
-
-@sio.on("get_nodes")
-async def get_nodes_socket(sid, data):
-    """
-    Socket.IO를 통한 노드 목록 조회
-    
-    Request Data:
-    {
-        "node_type": str,  # 'traffic_node' 또는 'bicycle_station' (선택)
-        "limit": int       # 반환할 최대 노드 수 (기본값: 100)
-    }
-    
-    Response (emit):
-    {
-        "success": bool,
-        "nodes": [
-            {
-                "id": int,
-                "lat": float,
-                "lon": float,
-                "type": str
-            },
-            ...
-        ],
-        "total": int
-    }
-    """
-    try:
-        node_type_filter = data.get("node_type")
-        limit = data.get("limit", 100)
-        
-        nodes = []
-        for node_id, node_data in graph.nodes(data=True):
-            if node_type_filter and node_data.get('type') != node_type_filter:
-                continue
-            
-            nodes.append({
-                "id": node_id,
-                "lat": node_data.get('lat'),
-                "lon": node_data.get('lon'),
-                "type": node_data.get('type')
-            })
-            
-            if len(nodes) >= limit:
-                break
-        
-        result = {
-            "success": True,
-            "nodes": nodes,
-            "total": len(nodes)
-        }
-        
-        await sio.emit("nodes_response", result, room=sid)
-        print(f"nodes response sent (sid: {sid}): {len(nodes)} nodes")
-    
-    except Exception as e:
-        logger.error(f"노드 조회 오류 (sid: {sid}): {str(e)}")
-        await sio.emit("nodes_response", {
-            "success": False,
-            "message": f"서버 오류: {str(e)}"
-        }, room=sid)
 
 
 # 서버 정리

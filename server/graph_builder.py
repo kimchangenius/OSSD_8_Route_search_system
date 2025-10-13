@@ -55,7 +55,7 @@ def build_graph():
     
     # 엣지 추가 (K-nearest neighbors 기반)
     print("엣지 추가 중...")
-    _add_edges_knn(graph, node_positions, k=8)
+    add_edges_knn(graph, node_positions, k=8)
     
     print(f"총 {len(graph.edges)}개 엣지 추가 완료")
     print("그래프 구축 완료!")
@@ -63,7 +63,7 @@ def build_graph():
     return graph
 
 
-def _add_edges_knn(graph: nx.Graph, node_positions: dict, k: int = 8):
+def add_edges_knn(graph: nx.Graph, node_positions: dict, k: int = 8):
     """
     K-nearest neighbors를 사용하여 엣지 추가
     
