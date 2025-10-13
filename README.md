@@ -23,3 +23,9 @@ Back-end: Python Flask
 
 ## Find Path Algorithm
 CCH: Customizable Contraction Hierarchies Algorithm
+
+reference:
+
+https://tech.kakao.com/posts/436
+
+https://newcodes.tistory.com/entry/카카오맵과-티맵이-사용하는-알고리즘-Customizable-Contraction-Hierarchies#google_vignette
