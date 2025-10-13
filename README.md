@@ -14,6 +14,8 @@
 
 https://t-data.seoul.go.kr/dataprovide/trafficdataviewfile.do?data_id=6
 
+https://data.seoul.go.kr/dataList/OA-13252/F/1/datasetView.do
+
 ## Tech Stack
 Front-end: React.js
 
