@@ -5,7 +5,7 @@ Python version : 3.12.x
 
 FrameWork : Flask
 
-Library : SocketIO
+Client-Server model : REST API
 
 ## Major Function
 1. Find Path

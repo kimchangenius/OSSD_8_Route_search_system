@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.neighbors import BallTree
 import numpy as np
 from haversine import haversine, Unit
-import server.config as cfg
+import config as cfg
 
 
 def build_graph():

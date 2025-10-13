@@ -1,9 +1,11 @@
 import os
 import pandas as pd
 
-PORT = 5000
+PORT = 5001
 
-data_folder = "data"
+# 현재 파일의 디렉토리를 기준으로 절대 경로 생성
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+data_folder = os.path.join(BASE_DIR, "data")
 node_file = os.path.join(data_folder, "seoul_traffic_node.csv")
 bicycle_file = os.path.join(data_folder, "bicycle_rental_position.csv")
 
