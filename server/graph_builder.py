@@ -30,7 +30,7 @@ def build_graph():
             node_id,
             lat=lat,
             lon=lon,
-            type="traffic_node"
+            type="seoul"
         )
         node_positions[node_id] = (lat, lon)
 

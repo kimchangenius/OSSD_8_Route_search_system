@@ -56,7 +56,7 @@ async def get_nodes(sid, data):
     
     Response (emit):
     [
-        {"id": node_id, "lat": lat, "lon": lon},
+        {"id": node_id, "lat": lat, "lon": lon, "type": type},
         ...
     ]
     """
@@ -68,7 +68,8 @@ async def get_nodes(sid, data):
             nodes.append({
                 "id": node_id,
                 "lat": node_data["lat"],
-                "lon": node_data["lon"]
+                "lon": node_data["lon"],
+                "type": node_data.get("type", "seoul")
             })
         
         # 클라이언트에 노드 정보 전송
@@ -82,7 +83,7 @@ async def get_nodes(sid, data):
 
 # 경로 찾기
 @sio.on("find_path")
-async def find_path_handler(sid, data):
+async def find_path(sid, data):
     """
     경로 탐색 이벤트 처리
     

@@ -37,7 +37,7 @@ class ContractionHierarchies:
             for node in remaining_nodes:
                 # Edge difference 계산
                 neighbors = list(self.contracted_graph.neighbors(node))
-                edge_diff = self._calculate_edge_difference(node, neighbors)
+                edge_diff = self.calculate_edge_difference(node, neighbors)
                 node_importance[node] = edge_diff
             
             # 중요도가 낮은 노드부터 contract
@@ -49,7 +49,7 @@ class ContractionHierarchies:
                                 if imp == min_importance][:max(1, len(remaining_nodes) // 100)]
             
             for node in nodes_to_contract:
-                self._contract_node(node, level)
+                self.contract_node(node, level)
                 self.node_levels[node] = level
                 remaining_nodes.remove(node)
             
@@ -61,7 +61,7 @@ class ContractionHierarchies:
         self.is_preprocessed = True
         print(f"CCH 전처리 완료! 총 {len(self.shortcuts)}개의 shortcut 생성됨")
     
-    def _calculate_edge_difference(self, node: int, neighbors: List[int]) -> int:
+    def calculate_edge_difference(self, node: int, neighbors: List[int]) -> int:
         """
         노드를 contract했을 때 추가되는 엣지 수 - 제거되는 엣지 수 계산
         """
@@ -81,7 +81,7 @@ class ContractionHierarchies:
         
         return added_edges - removed_edges
     
-    def _contract_node(self, node: int, level: int) -> None:
+    def contract_node(self, node: int, level: int) -> None:
         """
         노드를 contract하고 필요한 shortcut 추가
         """
@@ -205,12 +205,12 @@ class ContractionHierarchies:
             return None, float('inf')
         
         # 경로 재구성
-        path = self._reconstruct_path(start, goal, meeting_node, 
+        path = self.reconstruct_path(start, goal, meeting_node, 
                                       forward_parent, backward_parent)
         
         return path, best_dist
     
-    def _reconstruct_path(self, start: int, goal: int, meeting_node: int,
+    def reconstruct_path(self, start: int, goal: int, meeting_node: int,
                          forward_parent: Dict[int, Optional[int]],
                          backward_parent: Dict[int, Optional[int]]) -> List[int]:
         """
