@@ -17,20 +17,17 @@ def build_graph():
     node_id = 0
     node_positions = {}  # {node_id: (lat, lon)}
     
-    # 교통 노드 추가
-    for index, row in cfg.node_data.iterrows():
+    # 교통 노드 추가 (전처리된 JSON 데이터 사용)
+    for node_key, node_info in cfg.node_data.items():
         node_id += 1
-        lat = row['위도']
-        lon = row['경도']
+        lat = node_info['lat']
+        lon = node_info['lon']
         
-        if pd.isna(lat) or pd.isna(lon):
-            continue
-
         graph.add_node(
             node_id,
             lat=lat,
             lon=lon,
-            type="seoul"
+            type="traffic"
         )
         node_positions[node_id] = (lat, lon)
 
