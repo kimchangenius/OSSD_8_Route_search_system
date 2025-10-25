@@ -2,7 +2,9 @@
 Route search system considering shared mobility
 
 ## Abstract
-Currently, shared mobility applications focus on individual app services and do not consider route navigation. To address this issue, a system that combines shared mobility services and route navigation capabilities is needed.
+Currently, shared mobility applications focus on individual app services and do not consider route navigation. 
+
+To address this issue, a system that combines shared mobility services and route navigation capabilities is needed.
 
 ## insert image
 
@@ -24,13 +26,11 @@ Week 4 ~:
   + Front-end: Web design modifications
 
 ## Team roles & development areas
-Team Leader: Kimchanjin
++Team Leader: Kimchanjin
++Team member: Kangminkyu, Ruytaewoo
 
-Team member: Kangminkyu, Ruytaewoo
-
-Front-end part: Kimchanjin, Kangminkyu
-
-Back-end part: Kimchanjin, Ryutaewoo
++Front-end part: Kimchanjin, Kangminkyu
++Back-end part: Kimchanjin, Ryutaewoo
 
 **Please refer to the readme.md of each branch for details.**
 
