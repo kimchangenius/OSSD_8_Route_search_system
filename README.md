@@ -22,7 +22,7 @@ To address this issue, a system that combines shared mobility services and route
   + Front-end: Implement fuction that comparison diagram by route
 
 ### Week 4 ~:
-  + Back-end: Comparison diagram by route
+  + Back-end: Testing and modifying deployed servers
   + Front-end: Web design modifications
 
 ## Team roles & development areas
