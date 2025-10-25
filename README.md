@@ -9,26 +9,28 @@ To address this issue, a system that combines shared mobility services and route
 ## insert image
 
 ## Project Schedule
-Week 1: 
+### Week 1: 
   + Back-end: Data Preprocessing and Building a basic REST API-based server
   + Front-end: Show the map and node markers, Building a basic REST API-based client
 
-Week 2:
+### Week 2:
   + Back-end: Implement function that find path and send node info
   + Front-end: Design User Interface and Draw path
 
-Week 3:
+### Week 3:
   + Back-end: Building a server for deployment (using cloud services)
   + Front-end: Implement fuction that comparison diagram by route
 
-Week 4 ~:
+### Week 4 ~:
   + Back-end: Comparison diagram by route
   + Front-end: Web design modifications
 
 ## Team roles & development areas
+### Team roles
 + Team Leader: Kimchanjin
 + Team member: Kangminkyu, Ruytaewoo
----
+
+### Development areas
 + Front-end part: Kimchanjin, Kangminkyu
 + Back-end part: Kimchanjin, Ryutaewoo
 
