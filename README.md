@@ -1,31 +1,41 @@
-# OSSD_project
-오픈소스 소프트웨어 프로젝트
+# Title
+Route search system considering shared mobility
 
-팀장: 김찬진
+## Abstract
+Currently, shared mobility applications focus on individual app services and do not consider route navigation. To address this issue, a system that combines shared mobility services and route navigation capabilities is needed.
 
-팀원: 강민규, 류태우
+## insert image
 
+## Project Schedule
+Week 1: 
+  + Back-end: Data Preprocessing and Building a basic REST API-based server
+  + Front-end: Show the map and node markers, Building a basic REST API-based client
 
-## Subject
-공유 모빌리티를 고려한 경로 탐색 시스템
+Week 2:
+  + Back-end: Implement function that find path and send node info
+  + Front-end: Design User Interface and Draw path
 
-## Data
-따릉이, GCOO, 서울교통빅데이터
+Week 3:
+  + Back-end: Building a server for deployment (using cloud services)
+  + Front-end: Implement fuction that comparison diagram by route
 
-https://t-data.seoul.go.kr/dataprovide/trafficdataviewfile.do?data_id=6
+Week 4 ~:
+  + Back-end: Comparison diagram by route
+  + Front-end: Web design modifications
 
-https://data.seoul.go.kr/dataList/OA-13252/F/1/datasetView.do
+## Team roles & development areas
+Team Leader: Kimchanjin
+
+Team member: Kangminkyu, Ruytaewoo
+
+Front-end part: Kimchanjin, Kangminkyu
+
+Back-end part: Kimchanjin, Ryutaewoo
+
+**Please refer to the readme.md of each branch for details.**
+
 
 ## Tech Stack
-Front-end: React.js
+Front-end: React.js, CSS
 
 Back-end: Python Flask
-
-## Find Path Algorithm
-CCH: Customizable Contraction Hierarchies Algorithm
-
-reference:
-
-https://tech.kakao.com/posts/436
-
-https://newcodes.tistory.com/entry/카카오맵과-티맵이-사용하는-알고리즘-Customizable-Contraction-Hierarchies#google_vignette
