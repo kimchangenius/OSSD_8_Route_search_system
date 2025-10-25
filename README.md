@@ -28,7 +28,7 @@ Week 4 ~:
 ## Team roles & development areas
 + Team Leader: Kimchanjin
 + Team member: Kangminkyu, Ruytaewoo
-
+---
 + Front-end part: Kimchanjin, Kangminkyu
 + Back-end part: Kimchanjin, Ryutaewoo
 
