@@ -26,11 +26,11 @@ Week 4 ~:
   + Front-end: Web design modifications
 
 ## Team roles & development areas
-+Team Leader: Kimchanjin
-+Team member: Kangminkyu, Ruytaewoo
++ Team Leader: Kimchanjin
++ Team member: Kangminkyu, Ruytaewoo
 
-+Front-end part: Kimchanjin, Kangminkyu
-+Back-end part: Kimchanjin, Ryutaewoo
++ Front-end part: Kimchanjin, Kangminkyu
++ Back-end part: Kimchanjin, Ryutaewoo
 
 **Please refer to the readme.md of each branch for details.**
 
