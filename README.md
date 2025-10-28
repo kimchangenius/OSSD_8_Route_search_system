@@ -40,4 +40,4 @@ To address this issue, a system that combines shared mobility services and route
 ## Tech Stack
 Front-end: React.js, CSS
 
-Back-end: Python Flask
+Back-end: Python Flask, MongoDB
