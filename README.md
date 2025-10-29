@@ -6,7 +6,7 @@ Currently, shared mobility applications focus on individual app services and do 
 
 To address this issue, a system that combines shared mobility services and route navigation capabilities is needed.
 
-## insert image
+<img width="1411" height="693" alt="Image" src="https://github.com/user-attachments/assets/3fbcd597-8de8-43d4-b247-58b020af65c6" />
 
 ## Project Schedule
 ### Week 1: 
