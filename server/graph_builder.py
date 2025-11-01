@@ -107,8 +107,3 @@ def add_edges_knn(graph: nx.Graph, node_positions: dict, k: int = 8):
             graph.add_edge(node_id, neighbor_id, weight=distance_km)
             edges_added += 1
         
-        # 진행상황 출력
-        if (i + 1) % 1000 == 0:
-            print(f"  진행중... {i + 1}/{len(node_ids)} 노드 처리 완료")
-    
-    print(f"  {edges_added}개의 엣지 추가됨")
