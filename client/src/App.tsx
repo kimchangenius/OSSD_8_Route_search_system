@@ -137,7 +137,7 @@ function App() {
               const latLng = L.latLng(node.lat, node.lon);
               const point = roadRef.current!.latLngToContainerPoint(latLng);
               ctx.beginPath();
-              ctx.arc(point.x, point.y, 2, 0, Math.PI * 2, true);
+              ctx.arc(point.x, point.y, 1, 0, Math.PI * 2, true);
               ctx.fillStyle = "blue";
               ctx.fill();
             });
@@ -150,7 +150,7 @@ function App() {
               const latLng = L.latLng(node.lat, node.lon);
               const point = roadRef.current!.latLngToContainerPoint(latLng);
               ctx.beginPath();
-              ctx.arc(point.x, point.y, 2, 0, Math.PI * 2, true); // 자전거는 2px로 더 크게
+              ctx.arc(point.x, point.y, 2, 0, Math.PI * 2, true);
               ctx.fillStyle = "red";
               ctx.fill();
             });
