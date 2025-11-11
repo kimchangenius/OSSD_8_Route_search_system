@@ -70,3 +70,39 @@ html, body, #root{
   display: block;
   font-size: 12px;
 }
+
+
+/* Leaflet 팝업 내부 컨텐츠 스타일 */
+.popup-content {
+  font-size: 15px; /* 폰트 크기 키움 (약 2pt) */
+  line-height: 1.6;
+  margin: 0;
+}
+
+.popup-content div {
+  margin-bottom: 5px; /* ID와 Type 간격 */
+}
+
+.popup-button {
+  font-size: 15px; /* 텍스트와 동일한 폰트 크기 */
+  padding: 5px 10px;
+  margin-right: 8px;
+  margin-top: 5px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f8f8f8;
+}
+
+.popup-button:hover {
+  background-color: #eee;
+}
+
+/* react-leaflet 팝업의 기본 마진/패딩 제거 */
+.leaflet-popup-content {
+  margin: 10px !important; /* 팝업창 크기 조절 */
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+}
