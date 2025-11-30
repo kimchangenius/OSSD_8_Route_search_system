@@ -1,0 +1,258 @@
+/* Sidebar.css */
+
+.sidebar-container {
+  height: 100%;
+  background-color: white;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 2000;
+  transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Segoe UI", Roboto, sans-serif;
+}
+
+/* ... (상단 공통 스타일 유지) ... */
+.sidebar-content {
+  padding: 20px;
+  overflow-y: auto;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-closed .sidebar-content { display: none; }
+
+.a11y-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: polygon(0 0, 0 0, 0 0);
+}
+
+.sidebar-toggle {
+  position: absolute;
+  top: 50%;
+  right: -24px;
+  width: 24px;
+  height: 48px;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-left: none;
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 3px 0 4px rgba(0,0,0,0.05);
+  transform: translateY(-50%);
+  z-index: 2001;
+}
+
+.toggle-icon { font-size: 10px; color: #888; }
+.sidebar-toggle:hover .toggle-icon { color: #333; }
+
+.app-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #03C75A;
+    margin: 0 0 20px 0;
+    letter-spacing: -0.5px;
+}
+
+/* --- 검색 영역 --- */
+.search-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.search-input-wrapper { display: flex; gap: 8px; }
+.sidebar-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.sidebar-input:focus { border-color: #03C75A; }
+.search-btn {
+  background-color: #03C75A;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0 15px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.search-btn:hover { background-color: #02b150; }
+.search-options {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #666;
+}
+.sidebar-select {
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    background-color: #fff;
+    cursor: pointer;
+}
+.error-msg {
+    color: #e53935;
+    font-size: 13px;
+    margin-bottom: 10px;
+    padding: 8px;
+    background-color: #ffebee;
+    border-radius: 4px;
+}
+
+/* --- 검색 결과 카드 --- */
+.result-card {
+    border: 1px solid #03C75A;
+    background-color: #f9fdfa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.badge {
+    font-size: 11px;
+    background-color: #03C75A;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+.node-id { font-weight: bold; color: #333; }
+.node-desc { margin: 0 0 10px 0; color: #555; font-size: 14px; }
+.card-actions { display: flex; gap: 8px; }
+.action-btn {
+    flex: 1;
+    padding: 8px;
+    font-size: 13px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    border: 1px solid;
+    background: white;
+}
+.btn-start { border-color: #f44336; color: #f44336; }
+.btn-start:hover { background-color: #ffebee; }
+.btn-dest { border-color: #2196f3; color: #2196f3; }
+.btn-dest:hover { background-color: #e3f2fd; }
+.divider {
+    border: none;
+    border-top: 1px solid #eee;
+    margin: 20px 0;
+}
+
+/* --- 경로 섹션 --- */
+.section-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 0 15px 0;
+    color: #333;
+}
+.route-box {
+    display: flex;
+    flex-direction: column;
+}
+.route-slot {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    color: #333;
+    /* 테두리 두께가 변할 때 레이아웃 흔들림 방지 */
+    box-sizing: border-box; 
+}
+
+/* 기본 활성화 상태 (회색 테두리) */
+.route-slot.active {
+    background-color: white;
+    border-color: #ddd;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* [수정 2] 출발지(Start): 빨간색 테두리 */
+.route-slot.start-slot.active {
+    border-color: #f44336;
+    border-width: 1px;
+}
+
+/* [수정 2] 도착지(Dest): 파란색 테두리 */
+.route-slot.dest-slot.active {
+    border-color: #2196f3;
+    border-width: 1px;
+}
+
+/* 경유지(Via): 초록색 테두리 */
+.route-slot.via-slot.active {
+    background-color: white; 
+    border-color: #03C75A;
+    border-width: 1px;
+}
+
+/* 글자색 등 유지 */
+.route-slot.via-slot.active .slot-content,
+.route-slot.via-slot.active .info-id,
+.route-slot.via-slot.active .info-type {
+    color: #333 !important;
+}
+.route-slot.via-slot.active .btn-clear { color: #999; }
+.route-slot.via-slot.active .btn-clear:hover { color: #333; }
+
+.icon-wrapper {
+    width: 40px;
+    display: flex;
+    justify-content: center;
+}
+.marker-icon {
+    font-size: 11px;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 4px;
+    color: white;
+}
+.marker-icon.start { background-color: #f44336; }
+.marker-icon.dest { background-color: #2196f3; }
+.marker-icon.via { background-color: #03C75A; color: white; }
+
+.slot-content {
+    flex: 1;
+    margin-left: 10px;
+}
+.placeholder-text { color: #aaa; font-size: 14px; }
+.btn-clear {
+    border: none;
+    background: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 16px;
+}
+.btn-clear:hover { color: #333; }
+.route-connector {
+    padding-left: 31px;
+    height: 15px;
+    line-height: 15px;
+}
+.dots { color: #ccc; font-weight: bold; }

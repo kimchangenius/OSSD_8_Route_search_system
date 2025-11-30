@@ -4,105 +4,454 @@ html, body, #root{
   height: 100%;
   margin: 0;
   padding: 0;
-  font-weight: 400;
-  font-style: normal;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Segoe UI", Roboto, sans-serif;
 }
 
 .container {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  box-sizing: border-box;
+}
+
+.main-layout {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.map-wrapper {
+  flex: 1;
+  position: relative;
+  height: 100%;
 }
 
 .error-message {
   color: red;
   text-align: center;
   font-size: 24px;
+  margin-top: 50px;
 }
 
-.map-container {
-  flex: 1;
-  position: relative;
-  width: 100%;
-  height: 100%;
-  border-radius: 7px;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.road-network {
+/* --- 좌측 상단 검색 컨트롤 --- */
+.controls-left {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 15px;
+  left: 15px;
   z-index: 1000;
-  background: rgba(255, 255, 255, 0.8);
-  padding: 10px;
-  border-radius: 8px;
-}
-
-.road-network h3 {
-  margin: 0 0 5px 0;
-  font-size: 14px;
-}
-
-.road-network label {
   display: flex;
-  font-size: 12px;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.map-style {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1000;
-  background: rgba(255, 255, 255, 0.8);
+.search-panel {
+  background: white;
   padding: 10px;
   border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  display: flex;
+  gap: 5px;
+  align-items: center;
 }
 
-.map-style h3{
-  margin: 0 0 5px 0;
-  font-size: 14px;
+.map-input {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  width: 140px;
+  outline: none;
 }
+.map-input:focus { border-color: #03C75A; }
+.map-input::placeholder { color: #aaa; font-weight: 300; }
 
-.map-style label {
-  display: block;
+.map-select {
+  padding: 8px 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
   font-size: 12px;
-}
-
-
-/* Leaflet 팝업 내부 컨텐츠 스타일 */
-.popup-content {
-  font-size: 15px; /* 폰트 크기 키움 (약 2pt) */
-  line-height: 1.6;
-  margin: 0;
-}
-
-.popup-content div {
-  margin-bottom: 5px; /* ID와 Type 간격 */
-}
-
-.popup-button {
-  font-size: 15px; /* 텍스트와 동일한 폰트 크기 */
-  padding: 5px 10px;
-  margin-right: 8px;
-  margin-top: 5px;
+  background-color: #f9f9f9;
   cursor: pointer;
+  color: #555;
+}
+
+.btn-map-search {
+  background-color: #03C75A;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0 12px;
+  height: 34px;
+  font-weight: bold;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-map-search:hover { background-color: #02b150; }
+
+
+/* --- 우측 상단 컨트롤 --- */
+.controls-right {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.control-box {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  min-width: 120px;
+}
+
+.control-box h3 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #333;
+  font-weight: bold;
+}
+
+.style-dropdown {
+  width: 100%;
+  padding: 6px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  background-color: #f8f8f8;
+  font-size: 13px;
+  cursor: pointer;
 }
 
-.popup-button:hover {
-  background-color: #eee;
+.radio-group label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  color: #555;
 }
 
-/* react-leaflet 팝업의 기본 마진/패딩 제거 */
-.leaflet-popup-content {
-  margin: 10px !important; /* 팝업창 크기 조절 */
+.zoom-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: white;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  border: 1px solid #ccc;
 }
+
+.zoom-btn {
+  width: 36px;
+  height: 36px;
+  background: white;
+  border: none;
+  font-size: 20px;
+  font-weight: bold;
+  color: #555;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+}
+.zoom-btn:hover { background-color: #f0f0f0; }
+.zoom-btn:first-child { border-bottom: 1px solid #eee; }
+
+
+/* =========================================
+   [수정] 핀(Teardrop) 모양 - 잘림 및 위치 해결
+   ========================================= */
+
+/* =========================================
+   [최종 수정] 핀(Teardrop) 모양 - 찌그러짐 방지 & 위치 착붙 수정
+   ========================================= */
+
+/* 1. 팝업 컨테이너 초기화 (배경, 그림자 제거) */
+.pin-popup .leaflet-popup-content-wrapper {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+}
+
+/* 2. 말풍선 꼬리 제거 */
+.pin-popup .leaflet-popup-tip-container {
+    display: none !important;
+}
+
+/* 3. 팝업 내용물 위치 잡기 */
+.pin-popup .leaflet-popup-content {
+    /* [중요] 크기를 강제로 고정하여 찌그러짐 방지 */
+    width: 48px !important;
+    height: 48px !important;
+    margin: 0 !important;
+
+    /* 내용물 중앙 정렬 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /* [중요] 위치 보정: 핀의 뾰족한 끝이 정확히 점 위에 오도록 조정 */
+    position: relative;
+    bottom: 0px; /* 값을 조절하여 핀 높이 조정 (숫자가 클수록 위로 올라감) */
+    left: 0.5px;  /* 미세한 좌우 중심 보정 */
+}
+
+/* 4. 핀 몸체 (물방울 모양) */
+.pin-body {
+    /* [중요] 핀 자체 크기도 고정 */
+    width: 48px;
+    height: 48px;
+    
+    /* 왼쪽 아래만 뾰족하게 */
+    border-radius: 50% 50% 50% 0;
+    
+    /* -45도 회전하여 뾰족한 부분이 아래로 향하게 함 */
+    transform: rotate(-45deg);
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* 그림자와 흰색 테두리 */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    border: 3px solid white;
+    
+    /* 배경색이 테두리 안쪽까지 꽉 차게 */
+    box-sizing: border-box; 
+}
+
+/* 5. 내부 텍스트 (회전 복구) */
+.pin-text {
+    /* 몸체가 돌아갔으니 텍스트는 반대로 돌림 */
+    transform: rotate(45deg); 
+    
+    color: white;
+    font-weight: 800; /* 굵게 */
+    font-size: 13px;  /* 글자 크기 */
+    letter-spacing: -0.5px;
+    text-align: center;
+    line-height: 1;
+    
+    /* 글자가 정중앙에 오도록 미세 조정 */
+    margin-left: 2px; 
+    margin-bottom: 2px;
+}
+
+/* 색상 설정 */
+.pin-start .pin-body { background: #ff4d4d; } /* 더 선명한 빨강 */
+.pin-dest .pin-body { background: #2196f3; }  /* 파랑 */
+.pin-via .pin-body { background: #00c853; }   /* 더 선명한 초록 */
+
+
+/* =========================================
+   [수정] 네이버 지도 스타일 팝업 (디자인 개편)
+   ========================================= */
 
 .leaflet-popup-content-wrapper {
-  border-radius: 8px;
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    padding: 0;
+    overflow: hidden;
 }
+.leaflet-popup-content {
+    margin: 0 !important;
+    width: auto !important;
+}
+
+/* 팝업 컨테이너 (가로 크기 축소) */
+.naver-popup-layout-new {
+    padding: 15px 18px;
+    min-width: 260px; 
+    display: flex;
+    flex-direction: column;
+    cursor: default;
+    position: relative;
+    background: white;
+}
+
+.popup-close-x {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    border: none;
+    background: none;
+    color: #ccc;
+    font-size: 20px;
+    font-weight: 300;
+    cursor: pointer;
+    line-height: 1;
+    z-index: 10;
+    padding: 0;
+}
+.popup-close-x:hover { color: #555; }
+
+/* 1열 */
+.popup-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-right: 20px;
+}
+
+/* 폰트 크기 축소 */
+.popup-id-main {
+    font-size: 18px;
+    font-weight: 800;
+    color: #242424;
+    letter-spacing: -0.5px;
+}
+
+.popup-type-top-right {
+    font-size: 12px;
+    color: #888;
+    font-weight: 500;
+    margin-top: 3px;
+}
+
+/* 2열 하단 */
+.popup-bottom-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-star-bottom {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 24px;
+    color: #e0e0e0;
+    padding: 0 5px 0 0;
+    line-height: 1;
+    transition: color 0.2s;
+}
+.btn-star-bottom:hover { color: #ffd700; }
+.btn-star-bottom.active { color: #ffc107; }
+
+.popup-actions-group {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-naver-action {
+    background: white;
+    border: 1px solid #dce1eb;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    color: #555;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.btn-naver-action:hover { background-color: #f4f6fa; border-color: #cdd3e0; color: #333; }
+
+.btn-naver-action.start-color { color: #f44336; border-color: #f44336; background-color: #fff5f5; }
+.btn-naver-action.dest-color { color: #2196f3; border-color: #2196f3; background-color: #f5faff; }
+
+/* =========================================
+   [수정] 즐겨찾기 리스트 스타일
+   ========================================= */
+
+.favorites-section {
+    margin-top: 30px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}
+
+.favorites-title {
+    font-size: 15px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.favorites-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.favorite-item {
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    transition: box-shadow 0.2s;
+    gap: 10px;
+}
+.favorite-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-color: #ccc;
+}
+
+.fav-info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fav-icon-box {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.fav-id { font-weight: bold; font-size: 15px; color: #333; }
+.fav-type {
+    font-size: 12px;
+    color: #888;
+    background-color: #f5f5f5;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.fav-actions-row { display: flex; gap: 6px; }
+
+.fav-btn {
+    flex: 1;
+    padding: 6px 0;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    background: white;
+    border: 1px solid #ddd;
+    color: #555;
+    transition: all 0.1s;
+}
+.fav-btn:hover { background-color: #f9f9f9; border-color: #ccc; }
+
+.fav-btn.start { color: #f44336; border-color: #ffcdd2; background-color: #ffebee; }
+.fav-btn.start:hover { background-color: #ffcdd2; }
+
+.fav-btn.dest { color: #2196f3; border-color: #bbdefb; background-color: #e3f2fd; }
+.fav-btn.dest:hover { background-color: #bbdefb; }
+
+.fav-btn.del {
+    flex: 0 0 30px;
+    color: #999;
+    border-color: #eee;
+}
+.fav-btn.del:hover { color: #e53935; border-color: #e53935; background-color: white; }

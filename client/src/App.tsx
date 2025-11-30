@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
-// react-leaflet 임포트 수정
 import {
   MapContainer,
   TileLayer,
@@ -7,19 +6,21 @@ import {
   Popup,
   useMapEvents,
   Polyline,
+  ScaleControl, // [신규] 축척 바 컴포넌트 추가
 } from "react-leaflet";
 import { Map as LeafletMap, LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
 import LCanvasLayer from "./L.CanvasLayer";
+import Sidebar from "./Sidebar";
+import { useRoutePath } from "./useRoutePath";
+import { AppNode } from "./types";
 
 import "./App.css";
 
 const API_URL = "http://localhost:5001/api";
-
 const Maptiler_Key = "DFFxHHmQRoAl3CPIlnBb";
-
 const mapTilerStyles: Record<string, string> = {
   black: `http://223.194.46.216:8665/api/maps/positron/{z}/{x}/{y}.png`,
   osm: `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`,
@@ -28,109 +29,58 @@ const mapTilerStyles: Record<string, string> = {
   satellite: `https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=${Maptiler_Key}`,
 };
 
-// 노드 타입 정의 (전역 Node와 충돌 방지)
-interface AppNode {
-  lat: number;
-  lon: number;
-  id: number;
-  type: string;
-}
-
-// MapViewUpdater 컴포넌트
-interface MapViewUpdaterProps {
-  center: LatLngExpression;
-  zoom: number;
-}
-
-function MapViewUpdater({ center, zoom }: MapViewUpdaterProps) {
+function MapViewUpdater({ center, zoom }: { center: LatLngExpression; zoom: number }) {
   const map = useMap();
   useEffect(() => {
-    if (center) {
-      map.setView(center, zoom);
-    }
+    if (center) map.setView(center, zoom, { animate: true });
   }, [center, zoom, map]);
   return null;
 }
 
-// API 응답 타입 정의
-interface NodesResponse {
-  nodes: {
-    id: number;
-    lat: number;
-    lon: number;
-    type: string;
-  }[];
-  count: number;
-}
-
-// 맵 상호작용(클릭)을 처리하는 컴포넌트
 interface MapInteractionHandlerProps {
   allNodes: AppNode[];
   setPinnedNode: (node: AppNode | null) => void;
+  isPinned: boolean; 
+  setIsSidebarOpen: (isOpen: boolean) => void;
 }
 
-function MapInteractionHandler({
-  allNodes,
-  setPinnedNode,
-}: MapInteractionHandlerProps) {
-  const map = useMap();
+function MapInteractionHandler({ allNodes, setPinnedNode, isPinned, setIsSidebarOpen }: MapInteractionHandlerProps) {
+    const map = useMap();
+    const CLICK_THRESHOLD_PX = 20; 
   
-  // 클릭 감지 범위 (픽셀)
-  const CLICK_THRESHOLD_PX = 20; 
-
-  // 가장 가까운 노드를 찾는 헬퍼 함수
-  const findClosestNode = (latlng: L.LatLng): AppNode | null => {
-    let closestNode: AppNode | null = null;
-    let minPixelDistance = Infinity;
-    const point = map.latLngToContainerPoint(latlng);
-
-    allNodes.forEach((node) => {
-      const nodePoint = map.latLngToContainerPoint([node.lat, node.lon]);
-      const distance = point.distanceTo(nodePoint);
-
-      if (distance < minPixelDistance) {
-        minPixelDistance = distance;
-        closestNode = node;
-      }
+    const findClosestNode = (latlng: L.LatLng): AppNode | null => {
+      let closestNode: AppNode | null = null;
+      let minPixelDistance = Infinity;
+      const point = map.latLngToContainerPoint(latlng);
+  
+      allNodes.forEach((node) => {
+        const nodePoint = map.latLngToContainerPoint([node.lat, node.lon]);
+        const distance = point.distanceTo(nodePoint);
+        if (distance < minPixelDistance) {
+          minPixelDistance = distance;
+          closestNode = node;
+        }
+      });
+      if (closestNode && minPixelDistance < CLICK_THRESHOLD_PX) return closestNode;
+      return null;
+    };
+  
+    useMapEvents({
+      click(e) {
+        const node = findClosestNode(e.latlng);
+        if (node) {
+          const nodeToPin: AppNode = node;
+          L.DomEvent.stopPropagation(e.originalEvent); 
+          setTimeout(() => {
+              setPinnedNode(nodeToPin);
+              setIsSidebarOpen(true);
+          }, 0);
+        }
+      },
     });
-
-    if (closestNode && minPixelDistance < CLICK_THRESHOLD_PX) {
-      return closestNode;
-    }
     return null;
-  };
-
-  useMapEvents({
-    click(e) {
-      console.log("Map clicked"); // 1. 맵 클릭 감지
-      const node = findClosestNode(e.latlng);
-      
-      if (node) {
-        // 👈 [TypeScript 오류 수정]
-        // node의 타입을 잃지 않도록 새로운 상수에 할당합니다.
-        const nodeToPin: AppNode = node;
- 
-        console.log("Node found:", nodeToPin.id); // 2. 노드 찾음
-        L.DomEvent.stopPropagation(e.originalEvent); 
-        
-        setTimeout(() => {
-          // 👈 [TypeScript 오류 수정]
-          // 새로 할당한 상수를 사용합니다.
-          console.log("Setting pinned node:", nodeToPin.id); // 4. (지연 후) 팝업 띄우기
-          setPinnedNode(nodeToPin); // 클릭한 노드를 '고정'
-        }, 0);
- 
-      } else {
-        console.log("Empty space clicked — popup remains until closed via X"); // 빈 공간 클릭해도 닫지 않음
-      }
-    },
-  });
-
-  return null;
 }
 
-// Map 인스턴스를 부모로 전달하는 헬퍼 컴포넌트
-// props를 직접 변경하지 않도록 'setRoadRef' 콜백을 사용합니다.
 function MapRefSetter({ setRoadRef }: { setRoadRef: (m: LeafletMap | null) => void }) {
   const map = useMap();
   useEffect(() => {
@@ -141,493 +91,358 @@ function MapRefSetter({ setRoadRef }: { setRoadRef: (m: LeafletMap | null) => vo
 }
 
 function App() {
-  // API 상태
+  useEffect(() => { document.title = "공유 모빌리티 길찾기"; }, []);
+
   const [isConnected, setIsConnected] = useState<boolean>(false);
-
-  // Road Map
-  const [useCanvasLayer, setUseCanvasLayer] = useState<boolean>(false);
+  const [useCanvasLayer, setUseCanvasLayer] = useState<boolean>(true);
+  
   const roadRef = useRef<LeafletMap | null>(null);
-  // roadRef를 직접 변경하는 대신 콜백으로 전달 (ESLint 규칙 회피)
-  const setRoadRef = useCallback((m: LeafletMap | null) => {
-    roadRef.current = m;
-  }, []);
+  const setRoadRef = useCallback((m: LeafletMap | null) => { roadRef.current = m; }, []);
   const canvasLayerRef = useRef<any>(null);
-  const [mapStyle, setMapStyle] = useState<string>("black");
-  const [mapCenter] = useState<LatLngExpression>([37.65146111, 127.0583889]);
-  const [mapZoom] = useState<number>(15);
 
-  // Node
+  const [mapStyle, setMapStyle] = useState<string>("basic");
+  const [mapCenter, setMapCenter] = useState<LatLngExpression>([37.65146111, 127.0583889]); 
+  const [mapZoom, setMapZoom] = useState<number>(15);
+
   const [seoulNode, setSeoulNode] = useState<AppNode[]>([]);
   const [bicycleNode, setBicycleNode] = useState<AppNode[]>([]);
-
-  // 클릭으로 고정(pin)된 상태
+  
   const [pinnedNode, setPinnedNode] = useState<AppNode | null>(null);
-
-  // 출발지, 도착지 상태
+  
   const [startNode, setStartNode] = useState<AppNode | null>(null);
   const [destNode, setDestNode] = useState<AppNode | null>(null);
-  // 경로 좌표 상태 (폴리라인 그리기용)
-  const [routeCoords, setRouteCoords] = useState<LatLngExpression[] | null>(null);
+  const [viaNodes, setViaNodes] = useState<AppNode[]>([]);
+  
+  const routeCoords = useRoutePath(startNode, destNode, viaNodes);
 
-  // API로 노드 데이터 가져오기
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const [favorites, setFavorites] = useState<AppNode[]>([]);
+  const [quickId, setQuickId] = useState("");
+  const [quickType, setQuickType] = useState("traffic");
+
   useEffect(() => {
-    const fetchNodes = async () => {
-      try {
-        const response = await fetch(`${API_URL}/nodes`);
-        const data: NodesResponse = await response.json();
-
-        console.log("Nodes received:", data);
-
-        if (data.nodes && data.nodes.length > 0) {
-          // type에 따라 노드 분류
-          const trafficNodes: AppNode[] = data.nodes
-            .filter((node) => node.type === "traffic")
-            .map((node) => ({
-              lat: node.lat,
-              lon: node.lon,
-              id: Number(node.id),
-              type: node.type,
-            }));
-
-          const bicycleNodes: AppNode[] = data.nodes
-            .filter((node) => node.type === "bicycle_station")
-            .map((node) => ({
-              lat: node.lat,
-              lon: node.lon,
-              id: Number(node.id),
-              type: node.type,
-            }));
-
-          setSeoulNode(trafficNodes);
-          setBicycleNode(bicycleNodes);
-          setIsConnected(true);
-
-          console.log(
-            `Traffic nodes: ${trafficNodes.length}, Bicycle nodes: ${bicycleNodes.length}`
-          );
-        }
-      } catch (error) {
-        console.error("Failed to fetch nodes:", error);
-        setIsConnected(false);
-      }
-    };
-
-    fetchNodes();
+      const fetchNodes = async () => {
+          try {
+            const response = await fetch(`${API_URL}/nodes`);
+            const data = await response.json();
+            if (data.nodes && data.nodes.length > 0) {
+              const trafficNodes = data.nodes.filter((n:any) => n.type === "traffic").map((n:any) => ({...n, id: Number(n.id), lat: Number(n.lat), lon: Number(n.lon)}));
+              const bicycleNodes = data.nodes.filter((n:any) => n.type === "bicycle_station").map((n:any) => ({...n, id: Number(n.id), lat: Number(n.lat), lon: Number(n.lon)}));
+              setSeoulNode(trafficNodes);
+              setBicycleNode(bicycleNodes);
+              setIsConnected(true);
+            }
+          } catch(e) { console.error(e); setIsConnected(false); }
+      };
+      fetchNodes();
   }, []);
 
-  // 성능을 위해 전체 노드 목록을 useMemo로 관리
-  const allNodes = useMemo<AppNode[]>(
-    () => [...seoulNode, ...bicycleNode],
-    [seoulNode, bicycleNode]
-  );
+  const allNodes = useMemo<AppNode[]>(() => [...seoulNode, ...bicycleNode], [seoulNode, bicycleNode]);
 
-  // startNode 기준으로 가장 가까운 bicycle_station 찾기
-  const findNearestBicycle = useCallback((start: AppNode | null): AppNode | null => {
-    if (!start || !bicycleNode || bicycleNode.length === 0) return null;
-    let best: AppNode | null = null;
-    let bestDist = Infinity;
-    const startLatLng = L.latLng(start.lat, start.lon);
-    for (const b of bicycleNode) {
-      const d = startLatLng.distanceTo(L.latLng(b.lat, b.lon));
-      if (d < bestDist) {
-        bestDist = d;
-        best = b;
-      }
+  const toggleFavorite = (node: AppNode) => {
+    if (favorites.some(f => f.id === node.id)) {
+        setFavorites(favorites.filter(f => f.id !== node.id));
+    } else {
+        setFavorites([...favorites, node]);
     }
-    return best;
-  }, [bicycleNode]);
+  };
+  const removeFavorite = (id: number) => { setFavorites(favorites.filter(f => f.id !== id)); };
 
-// startNode와 destNode가 결정되면 경로(왕복이 아닌 경유 포함)를 계산하여 폴리라인 좌표로 설정
-  useEffect(() => {
-     // start 또는 dest가 없으면 경로 제거
-     if (!startNode || !destNode) {
-       setRouteCoords(null);
-       return;
-     }
- 
-     let cancelled = false;
- 
-     // API 호출 헬퍼 함수
-     const fetchPathSegment = async (sId: number, gId: number) => {
-       try {
-         const res = await fetch(`${API_URL}/find-path`, {
-           method: "POST",
-           headers: { "Content-Type": "application/json" },
-           body: JSON.stringify({ start_id: sId, goal_id: gId }),
-         });
-         const json = await res.json();
-         // console.log(`find-path (${sId} -> ${gId}):`, json); // 디버깅용
-         
-         const coordsOut: LatLngExpression[] = [];
-         const coords = json.coordinates ?? json.path ?? json.coords ?? null;
-
-         if (Array.isArray(coords)) {
-           if (coords.length > 0) {
-             if (Array.isArray(coords[0])) {
-               // [[a,b], [a,b], ...] 형태
-               coords.forEach((c: any) => {
-                 const a = Number(c[0]);
-                 const b = Number(c[1]);
-                 
-                 // ▼▼▼ [오류 수정] ▼▼▼
-                 // [a, b]가 number[]가 아닌 [number, number] 튜플임을 명시
-                 if (a >= -90 && a <= 90 && b >= -180 && b <= 180) coordsOut.push([a, b] as [number, number]);
-                 else if (b >= -90 && b <= 90 && a >= -180 && a <= 180) coordsOut.push([b, a] as [number, number]);
-                 // ▲▲▲ [오류 수정] ▲▲▲
-               });
-             } else if (typeof coords[0] === "object" && coords[0] !== null) {
-               // [{lat:.., lon:..}, {lat:.., lon:..}]
-               coords.forEach((c: any) => {
-                 const lat = Number(c.lat ?? c.latitude ?? c[0]);
-                 const lon = Number(c.lon ?? c.lng ?? c.longitude ?? c[1]);
-
-                 // ▼▼▼ [오류 수정] ▼▼▼
-                 // [lat, lon]이 number[]가 아닌 [number, number] 튜플임을 명시
-                 if (!Number.isNaN(lat) && !Number.isNaN(lon)) coordsOut.push([lat, lon] as [number, number]);
-                 // ▲▲▲ [오류 수정] ▲▲▲
-               });
-             }
-           }
-         }
-
-        if (coordsOut.length > 0) return coordsOut;
-        console.warn(`find-path (${sId} -> ${gId}) returned no coordinates:`, json);
-        return null;
-      } catch (e) {
-        console.error(`find-path (${sId} -> ${gId}) error:`, e);
-        return null;
-      }
-    };
-
-    // ------------------------------------------------------------------
-    // ▼ [수정된 핵심 로직] (여기는 변경 없음) ▼
-    // ------------------------------------------------------------------
-    (async () => {
-      // 1. 출발지/도착지에서 가장 가까운 자전거 정류소 탐색
-      const nearestBike_S = findNearestBicycle(startNode); // 출발지 -> 출발 정류소
-      const nearestBike_D = findNearestBicycle(destNode);  // 도착지 -> 도착 정류소
-
-      // 2. Walk-Bike-Walk 경로가 불가능한 경우 (자전거 정류소가 없음)
-      if (!nearestBike_S || !nearestBike_D) {
-        console.warn("Could not find bike stations for full walk-bike-walk path. Falling back to direct path.");
-        const segDirect = await fetchPathSegment(startNode.id, destNode.id);
-        
-        if (!cancelled) {
-          if (segDirect && segDirect.length > 0) {
-            setRouteCoords(segDirect); // 백엔드가 준 직접 경로
-          } else {
-            setRouteCoords([[startNode.lat, startNode.lon], [destNode.lat, destNode.lon]]);
-          }
-        }
-        return;
-      }
-
-      // 3. 3개 세그먼트(도보, 자전거, 도보)의 ID 정의
-      const seg1_S = startNode.id;       // A: 출발지
-      const seg1_G = nearestBike_S.id; // B: 출발 정류소
-      
-      const seg2_S = nearestBike_S.id; // B: 출발 정류소
-      const seg2_G = nearestBike_D.id; // C: 도착 정류소
-
-      const seg3_S = nearestBike_D.id; // C: 도착 정류소
-      const seg3_G = destNode.id;      // D: 도착지
-
-      // 4. 3개 세그먼트 병렬로 API 호출
-      const [seg1, seg2, seg3] = await Promise.all([
-        // Seg 1 (Walk): A -> B
-        (seg1_S === seg1_G)
-          ? Promise.resolve([[startNode.lat, startNode.lon] as [number, number]]) // 여기도 타입 명시
-          : fetchPathSegment(seg1_S, seg1_G),
-        
-        // Seg 2 (Bike): B -> C
-        (seg2_S === seg2_G)
-          ? Promise.resolve([[nearestBike_S.lat, nearestBike_S.lon] as [number, number]]) // 여기도 타입 명시
-          : fetchPathSegment(seg2_S, seg2_G),
-
-        // Seg 3 (Walk): C -> D
-        (seg3_S === seg3_G)
-          ? Promise.resolve([[destNode.lat, destNode.lon] as [number, number]]) // 여기도 타입 명시
-          : fetchPathSegment(seg3_S, seg3_G)
-      ]);
-
-      if (cancelled) return;
-
-      // 5. 결과 조합
-      const validSeg1 = seg1 && seg1.length > 0 ? seg1 : null;
-      const validSeg2 = seg2 && seg2.length > 0 ? seg2 : null;
-      const validSeg3 = seg3 && seg3.length > 0 ? seg3 : null;
-
-      // 6. 3개 경로가 모두 유효할 때만 조합
-      if (validSeg1 && validSeg2 && validSeg3) {
-        
-        // 중복되는 연결점 좌표 제거 헬퍼
-        const filterDuplicates = (segment: LatLngExpression[], prevSegment: LatLngExpression[] | null) => {
-            if (!prevSegment || prevSegment.length === 0) return segment;
-            const lastOfPrev = prevSegment[prevSegment.length - 1] as [number, number];
-            const firstOfNew = segment[0] as [number, number];
-            
-            if (Number(firstOfNew[0]) === Number(lastOfPrev[0]) && Number(firstOfNew[1]) === Number(lastOfPrev[1])) {
-                return segment.slice(1); // 첫 번째 점(중복)을 제외하고 반환
-            }
-            return segment;
-        };
-        
-        const combined: LatLngExpression[] = [
-          ...validSeg1,
-          ...filterDuplicates(validSeg2, validSeg1),
-          ...filterDuplicates(validSeg3, validSeg2),
-        ];
-        setRouteCoords(combined);
-
-      } else {
-        // [직선 경로 원인] 3개 세그먼트 중 하나라도 API가 경로를 안 주면 직선
-        console.warn("One or more path segments failed to load. Falling back to straight line.");
-        setRouteCoords([[startNode.lat, startNode.lon], [destNode.lat, destNode.lon]]);
-      }
-    })();
-    // ------------------------------------------------------------------
-    // ▲ [수정된 핵심 로직 끝] ▲
-    // ------------------------------------------------------------------
- 
-     return () => {
-       cancelled = true;
-     };
-   }, [startNode, destNode, bicycleNode, findNearestBicycle]); // findNearestBicycle도 의존성에 추가
-
-  // Canvas Layer 렌더링을 위한 별도 useEffect
   useEffect(() => {
     if (!roadRef.current) return;
-
     if (useCanvasLayer) {
-      if (canvasLayerRef.current) {
-        roadRef.current.removeLayer(canvasLayerRef.current);
-      }
-      canvasLayerRef.current = LCanvasLayer();
-      canvasLayerRef.current.delegate({
-        onDrawLayer: ({ canvas, bounds, size, zoom, center, corner }: any) => {
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return;
+        if (canvasLayerRef.current) roadRef.current.removeLayer(canvasLayerRef.current);
+        canvasLayerRef.current = LCanvasLayer();
+        canvasLayerRef.current.delegate({
+            onDrawLayer: ({ canvas, zoom }: any) => {
+                 const ctx = canvas.getContext("2d");
+                 if (!ctx) return;
+                 ctx.clearRect(0, 0, canvas.width, canvas.height);
+                 
+                 const scale = Math.min(1, zoom / 15);
+                 const trafficRadius = Math.max(2.5, 5 * scale); 
+                 const bikeSize = Math.max(8, 16 * scale); 
 
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+                 // [신규] 우선 순위 노드(출발/도착/경유) ID 집합 생성
+                 const priorityIds = new Set<number>();
+                 if (startNode) priorityIds.add(startNode.id);
+                 if (destNode) priorityIds.add(destNode.id);
+                 viaNodes.forEach(v => priorityIds.add(v.id));
 
-          // 줌 레벨 15를 기준으로, 15보다 크면(확대) 크기를 고정하고, 15보다 작으면(축소) 크기를 줄입니다.
-          const scale = Math.min(1, zoom / 15); // 줌 15 이상에선 scale이 1이 됨
-          const trafficRadius = Math.max(1, 3 * scale); // 기본 3
-          const bicycleRadius = Math.max(1.5, 4 * scale); // 기본 4
+                 // [신규] 겹침 방지를 위한 격자 시스템 (줌 레벨 16용)
+                 // 화면을 25px 단위 격자로 나누고 한 칸에 하나만 그림
+                 const grid: Record<string, boolean> = {};
+                 const CELL_SIZE = 25; 
+                 const checkGridAvailability = (point: L.Point) => {
+                     const gx = Math.floor(point.x / CELL_SIZE);
+                     const gy = Math.floor(point.y / CELL_SIZE);
+                     const key = `${gx},${gy}`;
+                     if (grid[key]) return false;
+                     grid[key] = true;
+                     return true;
+                 };
 
-          // Seoul Traffic Nodes 렌더링 (파란색)
-          if (seoulNode && seoulNode.length > 0) {
-            seoulNode.forEach((node) => {
-              const latLng = L.latLng(node.lat, node.lon);
-              const point = roadRef.current!.latLngToContainerPoint(latLng);
-              ctx.beginPath();
-              
-              if (startNode?.id === node.id) {
-                ctx.fillStyle = "yellow"; // 출발지: 노란색
-              } else if (destNode?.id === node.id) {
-                ctx.fillStyle = "green"; // 도착지: 초록색
-              } else {
-                ctx.fillStyle = "blue"; // 기본 교통 노드: 파란색
-              }
- 
-              ctx.arc(point.x, point.y, trafficRadius, 0, Math.PI * 2, true);
-              ctx.fill();
-            });
-          }
- 
-          // Bicycle Station Nodes 렌더링 (빨간색)
-          if (bicycleNode && bicycleNode.length > 0) {
-            bicycleNode.forEach((node) => {
-              const latLng = L.latLng(node.lat, node.lon);
-              const point = roadRef.current!.latLngToContainerPoint(latLng);
-              ctx.beginPath();
-              
-              if (startNode?.id === node.id) {
-                ctx.fillStyle = "yellow"; // 출발지(자전거역인 경우)
-              } else if (destNode?.id === node.id) {
-                ctx.fillStyle = "green"; // 도착지(자전거역인 경우)
-              } else {
-                ctx.fillStyle = "red"; // 자전거 대여소: 빨강
-              }
- 
-              ctx.arc(point.x, point.y, bicycleRadius, 0, Math.PI * 2, true); 
-              ctx.fill();
-            });
-          }
-        },
-      });
-      roadRef.current.addLayer(canvasLayerRef.current);
-      canvasLayerRef.current.needRedraw();
-    } else {
-      if (canvasLayerRef.current) {
-        roadRef.current.removeLayer(canvasLayerRef.current);
-        canvasLayerRef.current = null;
-      }
-    }
-  }, [useCanvasLayer, seoulNode, bicycleNode, startNode, destNode]);
+                 const drawNode = (node: AppNode, isBicycle: boolean) => {
+                     const point = roadRef.current!.latLngToContainerPoint(L.latLng(node.lat, node.lon));
+                     
+                     // ----------------------------------------------------
+                     // [수정 1] 줌 레벨에 따른 가시성(Visibility) 로직
+                     // ----------------------------------------------------
+                     
+                     // 1. 자전거 대여소: 모든 줌 레벨에서 표시 (요청사항 1번 참고)
+                     // 2. 우선 순위 노드(출발/도착/경유): 모든 줌 레벨에서 무조건 표시
+                     // 3. 일반 장소(Traffic):
+                     //    - Zoom >= 17: 모두 표시
+                     //    - Zoom == 16: 격자 확인 후 겹치면 숨김 (복잡도 해결)
+                     //    - Zoom <= 15: 아예 표시하지 않음 (숨김)
+                     
+                     const isPriority = priorityIds.has(node.id);
+                     let shouldDraw = false;
 
-  const handleStyleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMapStyle(e.target.value);
+                     if (isBicycle || isPriority) {
+                         shouldDraw = true;
+                     } else {
+                         // 일반 Traffic 노드 처리
+                         if (zoom >= 17) {
+                             shouldDraw = true;
+                         } else if (zoom >= 16) {
+                             // 16 레벨 (두 번 축소): 겹치면 앞에 있는 하나만
+                             if (checkGridAvailability(point)) {
+                                 shouldDraw = true;
+                             }
+                         } else {
+                             // 15 레벨 이하 (세 번 축소~): 일반 노드 숨김
+                             shouldDraw = false;
+                         }
+                     }
+
+                     if (!shouldDraw) return;
+
+                     // ----------------------------------------------------
+                     // 그리기 로직 (기존 디자인 유지)
+                     // ----------------------------------------------------
+                     ctx.beginPath();
+                     
+                     let isActive = false;
+                     let activeColor = "";
+                     if (startNode?.id === node.id) { isActive = true; activeColor = "#f44336"; }
+                     else if (destNode?.id === node.id) { isActive = true; activeColor = "#2196f3"; }
+                     else if (viaNodes.some(v => v.id === node.id)) { isActive = true; activeColor = "#03C75A"; }
+
+                     if (isBicycle) {
+                        const w = bikeSize * 1.5;
+                        const h = bikeSize * 1.5;
+                        const x = point.x - w/2;
+                        const y = point.y - h/2;
+                        const r = 4; 
+
+                        const strokeColor = isActive ? activeColor : "#546e7a";
+
+                        ctx.fillStyle = "white"; 
+                        ctx.strokeStyle = strokeColor; 
+                        ctx.lineWidth = 2;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(x + r, y);
+                        ctx.arcTo(x + w, y, x + w, y + h, r);
+                        ctx.arcTo(x + w, y + h, x, y + h, r);
+                        ctx.arcTo(x, y + h, x, y, r);
+                        ctx.arcTo(x, y, x + w, y, r);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.fillStyle = "black";
+                        ctx.font = `${bikeSize}px sans-serif`;
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText("🚲", point.x, point.y + 1); 
+
+                     } else {
+                        const r = trafficRadius;
+
+                        if (isActive) {
+                            ctx.fillStyle = activeColor;
+                            ctx.arc(point.x, point.y, r * 1.5, 0, Math.PI * 2, true);
+                            ctx.fill();
+                        } else {
+                            // 일반 노드 디자인 (회색 원 + 사각형)
+                            ctx.fillStyle = "#cfd8dc"; 
+                            ctx.beginPath();
+                            ctx.arc(point.x, point.y, r, 0, Math.PI * 2, true);
+                            ctx.fill();
+
+                            ctx.fillStyle = "#607d8b"; 
+                            const squareSize = r * 0.9;
+                            const offset = squareSize / 2;
+                            ctx.fillRect(point.x - offset, point.y - offset, squareSize, squareSize);
+                        }
+                     }
+                 };
+
+                 if (seoulNode.length > 0) seoulNode.forEach(node => drawNode(node, false));
+                 if (bicycleNode.length > 0) bicycleNode.forEach(node => drawNode(node, true));
+            }
+        });
+        roadRef.current.addLayer(canvasLayerRef.current);
+        canvasLayerRef.current.needRedraw();
+     } else {
+         if (canvasLayerRef.current) {
+            roadRef.current.removeLayer(canvasLayerRef.current);
+            canvasLayerRef.current = null;
+         }
+     }
+  }, [useCanvasLayer, seoulNode, bicycleNode, startNode, destNode, viaNodes]);
+
+  const handleLocateNode = (node: AppNode) => {
+    setMapCenter([node.lat, node.lon]);
+    setMapZoom(18);
+    setPinnedNode(node);
+    setIsSidebarOpen(true);
+  };
+  const handleStyleChange = (e: React.ChangeEvent<HTMLSelectElement>) => setMapStyle(e.target.value);
+  const handleZoomIn = () => roadRef.current?.zoomIn();
+  const handleZoomOut = () => roadRef.current?.zoomOut();
+
+  const handleQuickSearch = () => {
+    const idNum = Number(quickId);
+    if (isNaN(idNum)) { alert("숫자 ID를 입력하세요."); return; }
+    const found = allNodes.find(n => n.id === idNum && n.type === quickType);
+    if (found) {
+        setMapCenter([found.lat, found.lon]);
+        setMapZoom(18); 
+        setPinnedNode(found);
+        setIsSidebarOpen(true);
+    } else { alert("해당 ID의 노드를 찾을 수 없습니다."); }
   };
 
-  // 팝업에 표시할 노드를 결정 (pinnedNode만 사용)
   const displayNode = pinnedNode;
-  
+  const isDisplayNodeFavorite = displayNode ? favorites.some(f => f.id === displayNode.id) : false;
+
   return (
     <div className="container">
-      {!isConnected ? (
-        <div>
-          <h1 className="error-message">Not connected to server</h1>
-        </div>
-      ) : (
-        <div className="map-container">
-          <MapContainer
-            center={mapCenter}
-            zoom={mapZoom}
-            style={{ width: "100%", height: "100%" }}
-            zoomControl={false}
-            attributionControl={false}
-            // 맵 빈 공간 클릭으로 팝업이 닫히지 않게 함
-            closePopupOnClick={false}
-          >
-            {/* Map 인스턴스를 roadRef에 저장 (콜백으로 전달) */}
-            <MapRefSetter setRoadRef={setRoadRef} />
-            <MapViewUpdater center={mapCenter} zoom={mapZoom} />
-            <TileLayer url={mapTilerStyles[mapStyle]} />
+      {!isConnected ? <div><h1 className="error-message">Not connected to server</h1></div> : (
+        <div className="main-layout">
+          <Sidebar 
+            allNodes={allNodes}
+            startNode={startNode}
+            destNode={destNode}
+            viaNodes={viaNodes}
+            setStartNode={setStartNode}
+            setDestNode={setDestNode}
+            setViaNodes={setViaNodes}
+            onLocateNode={handleLocateNode}
+            isOpen={isSidebarOpen}
+            setIsOpen={setIsSidebarOpen}
+            favorites={favorites}
+            onRemoveFavorite={removeFavorite}
+            clickedNode={pinnedNode}
+          />
 
-            {/* 맵 상호작용 핸들러 컴포넌트 */}
-            <MapInteractionHandler
-              allNodes={allNodes}
-              setPinnedNode={setPinnedNode}
-            />
-
-            {/* 경로 폴리라인: 파란색, 도로와 유사한 굵기 */}
-            {routeCoords && routeCoords.length > 0 && (
-              <Polyline
-                positions={routeCoords}
-                pathOptions={{ color: "blue", weight: 6, opacity: 0.95 }}
-              />
-            )}
- 
-             {/* 팝업 렌더링 로직 */}
-             {displayNode && (
-               <Popup
-                key={displayNode.id}
-                position={[displayNode.lat, displayNode.lon]}
-                // 맵 클릭으로 닫히지 않음(안전 처리)
-                closeOnClick={false}
-                // 기본 닫기 버튼 비활성화하고 직접 닫기 버튼을 만듭니다.
-                closeButton={false}
-              >
-                <div className="popup-content">
-                  {/* 우측 상단 X (직접 닫기) */}
-                  <button
-                    className="popup-close-x"
-                    onClick={() => setPinnedNode(null)}
-                    aria-label="Close"
-                    style={{ float: "right" }}
-                  >
-                    X
-                  </button>
-
-                  <div>ID: {displayNode.id}</div>
-                  <div>Type: {displayNode.type}</div>
-                  <button
-                    className="popup-button"
-                    onClick={() => {
-                      setStartNode(displayNode);
-                      setPinnedNode(null); // 선택 후 팝업 닫기
-                    }}
-                  >
-                    출발
-                  </button>
-                  <button
-                    className="popup-button"
-                    onClick={() => {
-                      setDestNode(displayNode);
-                      setPinnedNode(null); // 선택 후 팝업 닫기
-                    }}
-                  >
-                    도착
-                  </button>
+          <div className="map-wrapper">
+             <div className="controls-left">
+                <div className="search-panel">
+                    <select className="map-select" value={quickType} onChange={(e) => setQuickType(e.target.value)}>
+                        <option value="traffic">장소</option>
+                        <option value="bicycle_station">대여소</option>
+                    </select>
+                    <div className="search-input-group">
+                        <input type="text" className="map-input" placeholder="장소를 입력해주세요" value={quickId}
+                            onChange={(e) => setQuickId(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuickSearch()} />
+                    </div>
+                    <button className="btn-map-search" onClick={handleQuickSearch}>검색</button>
                 </div>
-              </Popup>
-            )}
-          </MapContainer>
+             </div>
 
-          <div className="road-network">
-            <h3>Road Network</h3>
-            <label>
-              <input
-                type="radio"
-                name="seoulNode"
-                checked={useCanvasLayer}
-                onChange={() => setUseCanvasLayer(!useCanvasLayer)}
+            <MapContainer
+              center={mapCenter}
+              zoom={mapZoom}
+              style={{ width: "100%", height: "100%" }}
+              zoomControl={false}
+              attributionControl={false}
+              closePopupOnClick={false}
+            >
+              <MapRefSetter setRoadRef={setRoadRef} />
+              <MapViewUpdater center={mapCenter} zoom={mapZoom} />
+              <TileLayer url={mapTilerStyles[mapStyle]} />
+              
+              <MapInteractionHandler 
+                allNodes={allNodes} 
+                setPinnedNode={setPinnedNode} 
+                isPinned={!!pinnedNode} 
+                setIsSidebarOpen={setIsSidebarOpen}
               />
-              On
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="seoulNode"
-                checked={!useCanvasLayer}
-                onChange={() => setUseCanvasLayer(!useCanvasLayer)}
-              />
-              Off
-            </label>
-          </div>
-          <div className="map-style">
-            <h3>Map Style</h3>
-            <label>
-              <input
-                type="radio"
-                name="mapStyle"
-                value="black"
-                checked={mapStyle === "black"}
-                onChange={handleStyleChange}
-              />
-              Black
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="mapStyle"
-                value="osm"
-                checked={mapStyle === "osm"}
-                onChange={handleStyleChange}
-              />
-              Osm
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="mapStyle"
-                value="basic"
-                checked={mapStyle === "basic"}
-                onChange={handleStyleChange}
-              />
-              Basic
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="mapStyle"
-                value="streets"
-                checked={mapStyle === "streets"}
-                onChange={handleStyleChange}
-              />
-              Streets
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="mapStyle"
-                value="satellite"
-                checked={mapStyle === "satellite"}
-                onChange={handleStyleChange}
-              />
-              Satellite
-            </label>
+
+              {/* [수정 2] 오른쪽 아래에 축척 바 추가 (스크린샷 요청 반영) */}
+              <ScaleControl position="bottomright" imperial={false} />
+
+              {routeCoords && routeCoords.length > 0 && (
+                <Polyline key={routeCoords.length} positions={routeCoords} pathOptions={{ color: "red", weight: 8, opacity: 0.9 }} />
+              )}
+
+              {startNode && <Popup position={[startNode.lat, startNode.lon]} closeButton={false} autoClose={false} closeOnClick={false} className="pin-popup pin-start"><div className="pin-body"><div className="pin-text">출발</div></div></Popup>}
+              {destNode && <Popup position={[destNode.lat, destNode.lon]} closeButton={false} autoClose={false} closeOnClick={false} className="pin-popup pin-dest"><div className="pin-body"><div className="pin-text">도착</div></div></Popup>}
+              {viaNodes.map((via, idx) => (<Popup key={`via-${idx}`} position={[via.lat, via.lon]} closeButton={false} autoClose={false} closeOnClick={false} className="pin-popup pin-via"><div className="pin-body"><div className="pin-text">경유{idx+1}</div></div></Popup>))}
+
+              {displayNode && (
+                <Popup
+                  key={displayNode.id}
+                  position={[displayNode.lat, displayNode.lon]}
+                  closeOnClick={false}
+                  closeButton={false}
+                  className="naver-popup"
+                >
+                  <div className="naver-popup-layout-new" onClick={(e) => { e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); }}>
+                    <button className="popup-close-x" onClick={() => setPinnedNode(null)}>×</button>
+                    
+                    <div className="popup-row-header">
+                        <span className="popup-id-main">ID {displayNode.id}</span>
+                        <span className="popup-type-top-right">{displayNode.type === 'traffic' ? '장소' : '대여소'}</span>
+                    </div>
+
+                    <div className="popup-bottom-row">
+                        <button 
+                                className={`btn-star-bottom ${isDisplayNodeFavorite ? 'active' : ''}`} 
+                                onClick={() => toggleFavorite(displayNode)}
+                        >
+                            {isDisplayNodeFavorite ? '★' : '☆'}
+                        </button>
+                        
+                        <div className="popup-actions-group">
+                            <button className="btn-naver-action start-color" onClick={() => { setStartNode(displayNode); setPinnedNode(null); setIsSidebarOpen(true); }}>출발</button>
+                            <button className="btn-naver-action" onClick={() => { setViaNodes([...viaNodes, displayNode]); setPinnedNode(null); setIsSidebarOpen(true); }}>경유</button>
+                            <button className="btn-naver-action dest-color" onClick={() => { setDestNode(displayNode); setPinnedNode(null); setIsSidebarOpen(true); }}>도착</button>
+                        </div>
+                    </div>
+                  </div>
+                </Popup>
+              )}
+            </MapContainer>
+
+            <div className="controls-right">
+              <div className="control-box">
+                <h3>지도 스타일</h3>
+                <select className="style-dropdown" value={mapStyle} onChange={handleStyleChange}>
+                    <option value="basic">Basic</option>
+                    <option value="black">Black</option>
+                    <option value="osm">OSM</option>
+                    <option value="streets">Streets</option>
+                    <option value="satellite">Satellite</option>
+                </select>
+              </div>
+              <div className="control-box">
+                <h3>도로망 표시</h3>
+                <div className="radio-group">
+                    <label><input type="radio" checked={useCanvasLayer} onChange={() => setUseCanvasLayer(true)} /> On</label>
+                    <label><input type="radio" checked={!useCanvasLayer} onChange={() => setUseCanvasLayer(false)} /> Off</label>
+                </div>
+              </div>
+              <div className="zoom-controls">
+                <button className="zoom-btn" onClick={handleZoomIn}>+</button>
+                <button className="zoom-btn" onClick={handleZoomOut}>-</button>
+              </div>
+            </div>
           </div>
         </div>
       )}
