@@ -16,9 +16,6 @@ import path_finder
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# 포트 설정
-port = cfg.PORT
-
 # 앱 설정
 app = Sanic(name='server')
 # CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000"]}})
@@ -298,7 +295,6 @@ async def setup_graph(app, loop):
 async def health_check(request):
     return text("OK")
 
-
 # main 문 실행
 if __name__ == '__main__':
     print(f"{'='*60}")
@@ -307,6 +303,7 @@ if __name__ == '__main__':
     
     print("서버 시작 중... (그래프는 워커 프로세스에서 로드됩니다)\n")
     
+    port = int(os.environ.get("PORT", cfg.PORT))
     # 단일 프로세스 모드로 실행하여 타임아웃 문제 해결
     app.run(
         host='0.0.0.0', 
