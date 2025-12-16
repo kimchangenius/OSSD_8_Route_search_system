@@ -8,7 +8,7 @@ import {
   Polyline,
   ScaleControl, // [신규] 축척 바 컴포넌트 추가
 } from "react-leaflet";
-import { Map as LeafletMap, LatLngExpression } from "leaflet";
+import { Map as LeafletMap, LatLngExpression, LatLngBoundsExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -90,36 +90,84 @@ function MapRefSetter({ setRoadRef }: { setRoadRef: (m: LeafletMap | null) => vo
   return null;
 }
 
+// 초기 화면 범위를 고정하기 위한 Bounds 세터
+function MapBoundsSetter({ setInitialBounds, setPaddedBounds }: { setInitialBounds: (b: LatLngBoundsExpression | null) => void; setPaddedBounds: (b: LatLngBoundsExpression | null) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    // map 초기 로딩 시점에 현재 bounds를 저장하여 maxBounds로 사용
+    const bounds = map.getBounds();
+    setInitialBounds(bounds);
+    // 줌인 시 약간 여유 있게 이동할 수 있도록 패딩된 bounds도 저장
+    const padded = bounds.pad(0.5); // 50% 확장
+    setPaddedBounds(padded);
+    // 초기에는 딱 맞게 고정
+    map.setMaxBounds(bounds);
+  }, [map, setInitialBounds, setPaddedBounds]);
+  return null;
+}
+
 function App() {
   useEffect(() => { document.title = "공유 모빌리티 길찾기"; }, []);
 
   const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [useCanvasLayer, setUseCanvasLayer] = useState<boolean>(true);
+  const [useCanvasLayer, setUseCanvasLayer] = useState<boolean>(false);
   
   const roadRef = useRef<LeafletMap | null>(null);
   const setRoadRef = useCallback((m: LeafletMap | null) => { roadRef.current = m; }, []);
   const canvasLayerRef = useRef<any>(null);
 
-  const [mapStyle, setMapStyle] = useState<string>("basic");
+  const [mapStyle, setMapStyle] = useState<string>("black");
   const [mapCenter, setMapCenter] = useState<LatLngExpression>([37.65146111, 127.0583889]); 
   const [mapZoom, setMapZoom] = useState<number>(15);
+  const [initialBounds, setInitialBounds] = useState<LatLngBoundsExpression | null>(null);
+  const [paddedBounds, setPaddedBounds] = useState<LatLngBoundsExpression | null>(null);
+  const [currentMaxBounds, setCurrentMaxBounds] = useState<LatLngBoundsExpression | null>(null);
+
+    // 초기 고정 범위 로그 출력
+    useEffect(() => {
+      if (initialBounds) {
+          // Leaflet Bounds 객체에서 문자열(BBox)로 출력
+          // @ts-ignore toBBoxString은 런타임에서 제공됨
+          const bbox = (initialBounds as any).toBBoxString?.() ?? JSON.stringify(initialBounds);
+          console.log("[Initial Bounds]", bbox);
+      }
+    }, [initialBounds]);
+
+  // 줌 수준에 따라 허용 패닝 영역 조정
+  useEffect(() => {
+    const map = roadRef.current;
+    if (!map || !initialBounds) return;
+
+    const applyBounds = () => {
+      const z = map.getZoom();
+      const target = z > 15 && paddedBounds ? paddedBounds : initialBounds;
+      map.setMaxBounds(target);
+      setCurrentMaxBounds(target);
+    };
+
+    applyBounds();
+    map.on("zoomend", applyBounds);
+  return () => {
+    map.off("zoomend", applyBounds);
+  };
+  }, [initialBounds, paddedBounds]);
 
   const [seoulNode, setSeoulNode] = useState<AppNode[]>([]);
   const [bicycleNode, setBicycleNode] = useState<AppNode[]>([]);
+  const [ebikeNode, setEbikeNode] = useState<AppNode[]>([]);
   
   const [pinnedNode, setPinnedNode] = useState<AppNode | null>(null);
   
   const [startNode, setStartNode] = useState<AppNode | null>(null);
   const [destNode, setDestNode] = useState<AppNode | null>(null);
   const [viaNodes, setViaNodes] = useState<AppNode[]>([]);
-  
-  const routeCoords = useRoutePath(startNode, destNode, viaNodes);
+  const [routeRequested, setRouteRequested] = useState<boolean>(false);
+  const [selectedMode, setSelectedMode] = useState<"walk" | "bike" | "ebike" | null>(null);
+  const { routeModes, defaultMode } = useRoutePath(startNode, destNode, viaNodes, routeRequested);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const [favorites, setFavorites] = useState<AppNode[]>([]);
-  const [quickId, setQuickId] = useState("");
-  const [quickType, setQuickType] = useState("traffic");
 
   useEffect(() => {
       const fetchNodes = async () => {
@@ -127,10 +175,18 @@ function App() {
             const response = await fetch(`${API_URL}/nodes`);
             const data = await response.json();
             if (data.nodes && data.nodes.length > 0) {
-              const trafficNodes = data.nodes.filter((n:any) => n.type === "traffic").map((n:any) => ({...n, id: Number(n.id), lat: Number(n.lat), lon: Number(n.lon)}));
-              const bicycleNodes = data.nodes.filter((n:any) => n.type === "bicycle_station").map((n:any) => ({...n, id: Number(n.id), lat: Number(n.lat), lon: Number(n.lon)}));
+              const trafficNodes = data.nodes
+                .filter((n:any) => n.type === "traffic")
+                .map((n:any) => ({...n, id: Number(n.id), lat: Number(n.lat), lon: Number(n.lon), type: n.type}));
+              const bicycleNodes = data.nodes
+                .filter((n:any) => n.type === "bicycle_station")
+                .map((n:any) => ({...n, id: Number(n.id), lat: Number(n.lat), lon: Number(n.lon), type: n.type}));
+              const ebikeNodes = data.nodes
+                .filter((n:any) => n.type === "e_bicycle_station")
+                .map((n:any) => ({...n, id: Number(n.id), lat: Number(n.lat), lon: Number(n.lon), type: n.type}));
               setSeoulNode(trafficNodes);
               setBicycleNode(bicycleNodes);
+              setEbikeNode(ebikeNodes);
               setIsConnected(true);
             }
           } catch(e) { console.error(e); setIsConnected(false); }
@@ -138,7 +194,7 @@ function App() {
       fetchNodes();
   }, []);
 
-  const allNodes = useMemo<AppNode[]>(() => [...seoulNode, ...bicycleNode], [seoulNode, bicycleNode]);
+  const allNodes = useMemo<AppNode[]>(() => [...seoulNode, ...bicycleNode, ...ebikeNode], [seoulNode, bicycleNode, ebikeNode]);
 
   const toggleFavorite = (node: AppNode) => {
     if (favorites.some(f => f.id === node.id)) {
@@ -183,7 +239,7 @@ function App() {
                      return true;
                  };
 
-                 const drawNode = (node: AppNode, isBicycle: boolean) => {
+                 const drawNode = (node: AppNode, kind: "traffic" | "bike" | "ebike") => {
                      const point = roadRef.current!.latLngToContainerPoint(L.latLng(node.lat, node.lon));
                      
                      // ----------------------------------------------------
@@ -200,7 +256,7 @@ function App() {
                      const isPriority = priorityIds.has(node.id);
                      let shouldDraw = false;
 
-                     if (isBicycle || isPriority) {
+                     if (kind !== "traffic" || isPriority) {
                          shouldDraw = true;
                      } else {
                          // 일반 Traffic 노드 처리
@@ -230,14 +286,14 @@ function App() {
                      else if (destNode?.id === node.id) { isActive = true; activeColor = "#2196f3"; }
                      else if (viaNodes.some(v => v.id === node.id)) { isActive = true; activeColor = "#03C75A"; }
 
-                     if (isBicycle) {
+                     if (kind !== "traffic") {
                         const w = bikeSize * 1.5;
                         const h = bikeSize * 1.5;
                         const x = point.x - w/2;
                         const y = point.y - h/2;
                         const r = 4; 
 
-                        const strokeColor = isActive ? activeColor : "#546e7a";
+                        const strokeColor = isActive ? activeColor : (kind === "ebike" ? "#f9a825" : "#546e7a");
 
                         ctx.fillStyle = "white"; 
                         ctx.strokeStyle = strokeColor; 
@@ -253,11 +309,11 @@ function App() {
                         ctx.fill();
                         ctx.stroke();
 
-                        ctx.fillStyle = "black";
+                        ctx.fillStyle = kind === "ebike" ? "#f9a825" : "black";
                         ctx.font = `${bikeSize}px sans-serif`;
                         ctx.textAlign = "center";
                         ctx.textBaseline = "middle";
-                        ctx.fillText("🚲", point.x, point.y + 1); 
+                        ctx.fillText(kind === "ebike" ? "⚡" : "🚲", point.x, point.y + 1); 
 
                      } else {
                         const r = trafficRadius;
@@ -281,8 +337,9 @@ function App() {
                      }
                  };
 
-                 if (seoulNode.length > 0) seoulNode.forEach(node => drawNode(node, false));
-                 if (bicycleNode.length > 0) bicycleNode.forEach(node => drawNode(node, true));
+                 if (seoulNode.length > 0) seoulNode.forEach(node => drawNode(node, "traffic"));
+                 if (bicycleNode.length > 0) bicycleNode.forEach(node => drawNode(node, "bike"));
+                 if (ebikeNode.length > 0) ebikeNode.forEach(node => drawNode(node, "ebike"));
             }
         });
         roadRef.current.addLayer(canvasLayerRef.current);
@@ -293,7 +350,7 @@ function App() {
             canvasLayerRef.current = null;
          }
      }
-  }, [useCanvasLayer, seoulNode, bicycleNode, startNode, destNode, viaNodes]);
+  }, [useCanvasLayer, seoulNode, bicycleNode, ebikeNode, startNode, destNode, viaNodes]);
 
   const handleLocateNode = (node: AppNode) => {
     setMapCenter([node.lat, node.lon]);
@@ -305,16 +362,23 @@ function App() {
   const handleZoomIn = () => roadRef.current?.zoomIn();
   const handleZoomOut = () => roadRef.current?.zoomOut();
 
-  const handleQuickSearch = () => {
-    const idNum = Number(quickId);
-    if (isNaN(idNum)) { alert("숫자 ID를 입력하세요."); return; }
-    const found = allNodes.find(n => n.id === idNum && n.type === quickType);
-    if (found) {
-        setMapCenter([found.lat, found.lon]);
-        setMapZoom(18); 
-        setPinnedNode(found);
-        setIsSidebarOpen(true);
-    } else { alert("해당 ID의 노드를 찾을 수 없습니다."); }
+  // 출발/도착 변경 시 요청 상태 초기화
+  useEffect(() => {
+    setRouteRequested(false);
+    setSelectedMode(null);
+  }, [startNode, destNode]);
+
+  // useRoutePath로 받아온 기본 선택 모드 적용
+  useEffect(() => {
+    if (defaultMode) setSelectedMode(defaultMode);
+  }, [defaultMode]);
+
+  const handleRequestRoutes = () => {
+    if (!startNode || !destNode) {
+      alert("출발지와 도착지를 모두 선택하세요.");
+      return;
+    }
+    setRouteRequested(true);
   };
 
   const displayNode = pinnedNode;
@@ -338,32 +402,28 @@ function App() {
             favorites={favorites}
             onRemoveFavorite={removeFavorite}
             clickedNode={pinnedNode}
+            routeModes={routeModes}
+            routeRequested={routeRequested}
+            selectedMode={selectedMode}
+            onSelectMode={setSelectedMode}
+            onRequestRoutes={handleRequestRoutes}
           />
 
           <div className="map-wrapper">
-             <div className="controls-left">
-                <div className="search-panel">
-                    <select className="map-select" value={quickType} onChange={(e) => setQuickType(e.target.value)}>
-                        <option value="traffic">장소</option>
-                        <option value="bicycle_station">대여소</option>
-                    </select>
-                    <div className="search-input-group">
-                        <input type="text" className="map-input" placeholder="장소를 입력해주세요" value={quickId}
-                            onChange={(e) => setQuickId(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuickSearch()} />
-                    </div>
-                    <button className="btn-map-search" onClick={handleQuickSearch}>검색</button>
-                </div>
-             </div>
-
             <MapContainer
               center={mapCenter}
               zoom={mapZoom}
+              minZoom={15}              // 초기 수준 이하로 줌아웃 방지
+              maxZoom={19}              // 더 확대는 허용
+              maxBounds={currentMaxBounds || initialBounds || undefined}          // 초기 화면 기준, 줌인 시 살짝 여유
+              maxBoundsViscosity={1.0}   // 범위 밖 이동을 막음
               style={{ width: "100%", height: "100%" }}
               zoomControl={false}
               attributionControl={false}
               closePopupOnClick={false}
             >
               <MapRefSetter setRoadRef={setRoadRef} />
+              <MapBoundsSetter setInitialBounds={setInitialBounds} setPaddedBounds={setPaddedBounds} />
               <MapViewUpdater center={mapCenter} zoom={mapZoom} />
               <TileLayer url={mapTilerStyles[mapStyle]} />
               
@@ -374,12 +434,67 @@ function App() {
                 setIsSidebarOpen={setIsSidebarOpen}
               />
 
-              {/* [수정 2] 오른쪽 아래에 축척 바 추가 (스크린샷 요청 반영) */}
               <ScaleControl position="bottomright" imperial={false} />
 
-              {routeCoords && routeCoords.length > 0 && (
-                <Polyline key={routeCoords.length} positions={routeCoords} pathOptions={{ color: "red", weight: 8, opacity: 0.9 }} />
-              )}
+              {routeRequested && routeModes &&
+                (["walk", "bike", "ebike"] as const).map((mode) => {
+                  const data = routeModes?.[mode];
+                  if (!data) return null;
+                  const isSelected = selectedMode === mode;
+                  const colorMap: Record<"walk" | "bike" | "ebike", string> = {
+                    walk: "#4CAF50",     // green
+                    bike: "#FF9800",     // orange
+                    ebike: "#9C27B0",    // purple
+                  };
+                  const segments = data?.segments as any[] | undefined;
+                  // fallback: 전체 좌표 한 번에
+                  const baseOpacity = isSelected ? 0.9 : 0.35;
+                  const baseWeight = isSelected ? 6 : 4;
+
+                  if (segments && segments.length > 0) {
+                    return segments.map((seg, idx) => {
+                      const coords = seg?.coordinates;
+                      if (!coords || coords.length === 0) return null;
+                      const positions = coords.map(
+                        ([lat, lon]: [number, number]) => [lat, lon]
+                      ) as LatLngExpression[];
+                      const segType: "walk" | "bike" | "ebike" = seg?.type || mode;
+                      const segColor = isSelected ? (
+                        segType === "walk" ? colorMap.walk :
+                        segType === "bike" ? colorMap.bike :
+                        colorMap.ebike
+                      ) : "#4a4a4a";
+                      return (
+                        <Polyline
+                          key={`${mode}-seg-${idx}`}
+                          positions={positions}
+                          pathOptions={{
+                            color: segColor,
+                            weight: baseWeight,
+                            opacity: baseOpacity,
+                          }}
+                        />
+                      );
+                    });
+                  }
+
+                  // fallback: segments 없으면 전체 경로 단일색
+                  const coords = data?.coordinates;
+                  if (!coords || coords.length === 0) return null;
+                  const positions = coords.map(([lat, lon]: [number, number]) => [lat, lon]) as LatLngExpression[];
+                  const baseColor = isSelected ? colorMap[mode] : "#4a4a4a";
+                  return (
+                    <Polyline
+                      key={mode}
+                      positions={positions}
+                      pathOptions={{
+                        color: baseColor,
+                        weight: baseWeight,
+                        opacity: baseOpacity,
+                      }}
+                    />
+                  );
+                })}
 
               {startNode && <Popup position={[startNode.lat, startNode.lon]} closeButton={false} autoClose={false} closeOnClick={false} className="pin-popup pin-start"><div className="pin-body"><div className="pin-text">출발</div></div></Popup>}
               {destNode && <Popup position={[destNode.lat, destNode.lon]} closeButton={false} autoClose={false} closeOnClick={false} className="pin-popup pin-dest"><div className="pin-body"><div className="pin-text">도착</div></div></Popup>}

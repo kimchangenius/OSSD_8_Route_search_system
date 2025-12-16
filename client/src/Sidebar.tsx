@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import './Sidebar.css';
 import './App.css'; 
 import Favorites from './Favorites';
@@ -18,6 +18,11 @@ interface SidebarProps {
   favorites: AppNode[];
   onRemoveFavorite: (id: number) => void;
   clickedNode: AppNode | null;
+  routeModes?: any | null;
+  routeRequested: boolean;
+  selectedMode: "walk" | "bike" | "ebike" | null;
+  onSelectMode: (mode: "walk" | "bike" | "ebike") => void;
+  onRequestRoutes: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -33,46 +38,19 @@ const Sidebar: React.FC<SidebarProps> = ({
   setIsOpen,
   favorites,
   onRemoveFavorite,
-  clickedNode
+  clickedNode,
+  routeModes,
+  routeRequested,
+  selectedMode,
+  onSelectMode,
+  onRequestRoutes
 }) => {
-  const [searchId, setSearchId] = useState<string>("");
-  const [searchType, setSearchType] = useState<string>("traffic");
-  const [searchResult, setSearchResult] = useState<AppNode | null>(null);
-  const [searchError, setSearchError] = useState<string>("");
-
   useEffect(() => {
-    if (clickedNode) {
-        setSearchResult(clickedNode);
-        setSearchError("");
-        setSearchId(clickedNode.id.toString());
-        setSearchType(clickedNode.type);
-    }
+    // 검색 기능 제거: 클릭된 노드를 별도 상태로 보관하지 않음
   }, [clickedNode]);
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen); 
-  };
-
-  const handleSearch = () => {
-    setSearchError("");
-    setSearchResult(null);
-
-    const idNum = Number(searchId);
-    if (isNaN(idNum)) {
-      setSearchError("숫자 ID를 입력해주세요.");
-      return;
-    }
-
-    const found = allNodes.find(
-      (node) => node.id === idNum && node.type === searchType
-    );
-
-    if (found) {
-      setSearchResult(found);
-      if (onLocateNode) onLocateNode(found);
-    } else {
-      setSearchError("해당 장소를 찾을 수 없습니다.");
-    }
   };
 
   const removeVia = (index: number) => {
@@ -93,62 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="sidebar-content">
         <h2 className="app-title">공유 모빌리티 길찾기</h2>
 
-        {/* 1. 검색 영역 */}
-        <div className="search-section">
-          <div className="search-input-wrapper">
-            <label htmlFor="search-node-id" className="a11y-hidden">장소 입력</label>
-            <input 
-              id="search-node-id"
-              type="text" 
-              className="sidebar-input search-text"
-              placeholder="장소를 입력하세요 (ID)"
-              value={searchId}
-              onChange={(e) => setSearchId(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            />
-            <button className="search-btn" onClick={handleSearch}>검색</button>
-          </div>
-          <div className="search-options">
-            <label htmlFor="search-node-type" className="option-label">유형</label>
-            <select 
-              id="search-node-type"
-              className="sidebar-select"
-              value={searchType}
-              onChange={(e) => setSearchType(e.target.value)}
-            >
-              {/* [수정] 교차로 -> 장소 */}
-              <option value="traffic">일반 장소</option>
-              <option value="bicycle_station">자전거 대여소</option>
-            </select>
-          </div>
-        </div>
-
-        {/* 2. 검색 결과 */}
-        {searchError && <div className="error-msg">{searchError}</div>}
-        {searchResult && (
-          <div className="result-card">
-            <div className="card-header">
-              <span className="badge">검색 결과</span>
-              <span className="node-id">ID: {searchResult.id}</span>
-            </div>
-            {/* [수정] 교차로 -> 장소 */}
-            <div className="node-desc" style={{fontSize: '12px', color:'#666', marginBottom:'8px'}}>
-                 {searchResult.type === 'traffic' ? '📍 일반 장소' : '🚲 자전거 대여소'}
-            </div>
-
-            <div className="card-body">
-                <div className="card-actions">
-                    <button className="action-btn btn-start" onClick={() => setStartNode(searchResult)}>출발</button>
-                    <button className="action-btn" style={{borderColor:'#aaa', color:'#555'}} onClick={() => setViaNodes([...viaNodes, searchResult])}>경유</button>
-                    <button className="action-btn btn-dest" onClick={() => setDestNode(searchResult)}>도착</button>
-                </div>
-            </div>
-          </div>
-        )}
-
-        <hr className="divider" />
-
-        {/* 3. 경로 (출발 - 경유 - 도착) */}
+        {/* 경로 (출발 - 경유 - 도착) */}
         <div className="route-section">
           <h3 className="section-title">경로</h3>
           
@@ -195,9 +118,123 @@ const Sidebar: React.FC<SidebarProps> = ({
             onSetDest={setDestNode}
         />
 
+        {/* 5. 경로 찾기 버튼 */}
+        <div className="route-action">
+          <button
+            className="route-action-btn"
+            onClick={onRequestRoutes}
+            disabled={!startNode || !destNode}
+          >
+            경로 찾기
+          </button>
+          {!startNode || !destNode ? (
+            <div className="route-hint">출발/도착을 먼저 선택하세요.</div>
+          ) : null}
+        </div>
+
+        {/* 6. 모드별 경로 요약 (버튼 실행 후에만 표시) */}
+        {routeRequested && routeModes && (
+          <div className="route-section">
+            <h3 className="section-title">경로 옵션</h3>
+            <div className="mode-list">
+              {renderModeCard("도보", "walk", routeModes?.walk, selectedMode, onSelectMode)}
+              {renderModeCard("따릉이", "bike", routeModes?.bike, selectedMode, onSelectMode)}
+              {renderModeCard("지쿠터", "ebike", routeModes?.ebike, selectedMode, onSelectMode)}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
 };
+
+// 모드 카드 렌더러
+function renderModeCard(
+  label: string,
+  modeKey: "walk" | "bike" | "ebike",
+  data: any,
+  selectedMode: "walk" | "bike" | "ebike" | null,
+  onSelectMode: (mode: "walk" | "bike" | "ebike") => void
+) {
+  const timeMin = data?.time_min;
+  const comp = data?.time_components;
+  const walkTime = comp?.walk ?? 0;
+  const rideTime = comp?.ride ?? 0;
+  const rideType = comp?.ride_type;
+  const timeSegments = data?.time_segments as { type: "walk" | "bike" | "ebike"; time_min: number }[] | undefined;
+  const success = data?.success;
+  const message = data?.message;
+  const isSelected = selectedMode === modeKey;
+  const isClickable = success;
+
+  const total = (walkTime || 0) + (rideTime || 0);
+  // time_segments 기반으로 퍼센트 계산 (있을 때만 사용, 순서 유지)
+  let barBlocks: { type: "walk" | "bike" | "ebike"; pct: number; value: number }[] = [];
+  let seqText = "";
+  if (timeSegments && timeSegments.length > 0) {
+    const segTotal = timeSegments.reduce((s, ts) => s + (ts.time_min || 0), 0);
+    if (segTotal > 0) {
+      barBlocks = timeSegments
+        .filter((ts) => ts.time_min > 0)
+        .map((ts) => ({
+          type: ts.type,
+          value: ts.time_min,
+          pct: (ts.time_min / segTotal) * 100,
+        }));
+      seqText = barBlocks
+        .map((b) => `${b.type === "walk" ? "도보" : b.type === "bike" ? "자전거" : "전기자전거"} ${b.value}분`)
+        .join(" → ");
+    }
+  }
+  // time_segments 없을 때 fallback
+  if (barBlocks.length === 0 && total > 0) {
+    const walkPct = (walkTime / total) * 100;
+    const ridePct = (rideTime / total) * 100;
+    if (walkPct > 0) barBlocks.push({ type: "walk", pct: walkPct, value: walkTime });
+    if (ridePct > 0) barBlocks.push({ type: rideType === "ebike" ? "ebike" : "bike", pct: ridePct, value: rideTime });
+    seqText = [
+      walkPct > 0 ? `도보 ${walkTime}분` : null,
+      ridePct > 0 ? `${rideType === "ebike" ? "전기자전거" : "자전거"} ${rideTime}분` : null,
+    ]
+      .filter(Boolean)
+      .join(" → ");
+  }
+
+  return (
+    <div
+      className={`mode-card ${isSelected ? "selected" : ""} ${isClickable ? "clickable" : ""}`}
+      onClick={() => { if (isClickable) onSelectMode(modeKey); }}
+    >
+      <div className="mode-title">{label}</div>
+      {success ? (
+        <div className="mode-info">
+          <div>소요시간: {timeMin ?? 0} 분</div>
+          <div style={{ marginTop: 6 }}>
+            <div style={{ display: "flex", height: 10, borderRadius: 4, overflow: "hidden", background: "#eee" }}>
+              {barBlocks.map((b, idx) => (
+                <div
+                  key={`bar-${idx}`}
+                  style={{
+                    width: `${b.pct}%`,
+                    background:
+                      b.type === "walk"
+                        ? "#4CAF50"
+                        : b.type === "bike"
+                        ? "#FF9800"
+                        : "#9C27B0",
+                  }}
+                />
+              ))}
+            </div>
+            <div style={{ fontSize: 12, color: "#555", marginTop: 4 }}>{seqText}</div>
+          </div>
+        </div>
+      ) : (
+        <div className="mode-info fail">{message || "경로를 찾을 수 없습니다."}</div>
+      )}
+    </div>
+  );
+}
 
 export default Sidebar;

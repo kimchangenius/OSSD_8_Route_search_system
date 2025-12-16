@@ -64,109 +64,13 @@
     letter-spacing: -0.5px;
 }
 
-/* --- 검색 영역 --- */
-.search-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-.search-input-wrapper { display: flex; gap: 8px; }
-.sidebar-input {
-  flex: 1;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.sidebar-input:focus { border-color: #03C75A; }
-.search-btn {
-  background-color: #03C75A;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 0 15px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.search-btn:hover { background-color: #02b150; }
-.search-options {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 13px;
-    color: #666;
-}
-.sidebar-select {
-    padding: 5px 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 12px;
-    background-color: #fff;
-    cursor: pointer;
-}
-.error-msg {
-    color: #e53935;
-    font-size: 13px;
-    margin-bottom: 10px;
-    padding: 8px;
-    background-color: #ffebee;
-    border-radius: 4px;
-}
-
-/* --- 검색 결과 카드 --- */
-.result-card {
-    border: 1px solid #03C75A;
-    background-color: #f9fdfa;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 10px;
-}
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-}
-.badge {
-    font-size: 11px;
-    background-color: #03C75A;
-    color: white;
-    padding: 2px 6px;
-    border-radius: 10px;
-}
-.node-id { font-weight: bold; color: #333; }
-.node-desc { margin: 0 0 10px 0; color: #555; font-size: 14px; }
-.card-actions { display: flex; gap: 8px; }
-.action-btn {
-    flex: 1;
-    padding: 8px;
-    font-size: 13px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 600;
-    border: 1px solid;
-    background: white;
-}
-.btn-start { border-color: #f44336; color: #f44336; }
-.btn-start:hover { background-color: #ffebee; }
-.btn-dest { border-color: #2196f3; color: #2196f3; }
-.btn-dest:hover { background-color: #e3f2fd; }
-.divider {
-    border: none;
-    border-top: 1px solid #eee;
-    margin: 20px 0;
-}
+/* 검색 기능 제거로 관련 스타일 삭제 */
 
 /* --- 경로 섹션 --- */
 .section-title {
     font-size: 16px;
     font-weight: bold;
-    margin: 0 0 15px 0;
+    margin: 15px 0 15px 0;
     color: #333;
 }
 .route-box {
@@ -256,3 +160,56 @@
     line-height: 15px;
 }
 .dots { color: #ccc; font-weight: bold; }
+
+/* 모드별 경로 카드 */
+.mode-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mode-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fafafa;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.mode-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #333;
+}
+.mode-info {
+  font-size: 13px;
+  color: #444;
+}
+.mode-info.fail {
+  color: #e53935;
+}
+
+/* 경로 찾기 버튼 영역 */
+.route-action {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.route-action-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #03C75A;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.route-action-btn:disabled {
+  background-color: #cfd8dc;
+  cursor: not-allowed;
+}
+.route-hint {
+  font-size: 12px;
+  color: #999;
+}

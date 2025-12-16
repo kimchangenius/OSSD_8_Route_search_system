@@ -9,6 +9,10 @@ module.exports = {
         }
       ]
     ]
+  },
+  // DevServer allowedHosts 오류 방지
+  devServer: {
+    allowedHosts: 'all' // 빈 문자열 허용 오류 대응
   }
 };
 
