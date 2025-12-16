@@ -290,11 +290,6 @@ async def setup_graph(app, loop):
 
     app.ctx.graph = graph
 
-
-@app.get("/api/health")
-async def health_check(request):
-    return text("OK")
-
 # main 문 실행
 if __name__ == '__main__':
     print(f"{'='*60}")
