@@ -14,4 +14,4 @@ COPY server/ .
 ENV PORT=8000
 
 # $PORT를 shell에서 확장시키기 위해 sh -c 사용
-CMD ["sh", "-c", "sanic app:app --host=0.0.0.0 --port ${PORT} --single-process --no-reload"]
+CMD ["sh", "-c", "sanic app:app --host=0.0.0.0 --port ${PORT:-10000} --single-process --no-reload"]

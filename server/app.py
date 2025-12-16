@@ -1,6 +1,7 @@
 import resource
 from sanic import Sanic, json
 from sanic.response import json as json_response, empty
+from sanic.response import text
 import logging
 import subprocess
 import signal
@@ -291,6 +292,12 @@ async def setup_graph(app, loop):
         raise
 
     app.ctx.graph = graph
+
+
+@app.get("/api/health")
+async def health_check(request):
+    return text("OK")
+
 
 # main 문 실행
 if __name__ == '__main__':
