@@ -19,7 +19,7 @@ import { AppNode } from "./types";
 
 import "./App.css";
 
-const API_URL = "http://localhost:5001/api";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001/api";
 const Maptiler_Key = "DFFxHHmQRoAl3CPIlnBb";
 const mapTilerStyles: Record<string, string> = {
   black: `http://223.194.46.216:8665/api/maps/positron/{z}/{x}/{y}.png`,

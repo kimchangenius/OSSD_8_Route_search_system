@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { AppNode } from "./types"; // 1단계에서 만든 타입 임포트
 
-const API_URL = "http://localhost:5001/api";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001/api";
 
 export function useRoutePath(
   startNode: AppNode | null,
