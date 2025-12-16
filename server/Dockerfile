@@ -6,12 +6,12 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install dependencies (build context가 리포지토리 루트인 경우 경로를 명시)
-COPY backend/server/requirements.txt ./requirements.txt
+# Install dependencies (Dockerfile이 backend/server 안에 있으므로 상대 경로 사용)
+COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend source
-COPY backend/server/ .
+COPY . .
 
 # Default port (Render sets PORT env if needed)
 ENV PORT=5001
