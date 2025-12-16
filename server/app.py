@@ -309,7 +309,7 @@ if __name__ == '__main__':
     app.run(
         host='0.0.0.0', 
         port=port,
-        access_log=True,
-        debug=True,
+        debug=False,
+        auto_reload=False,
         single_process=True  # 멀티프로세싱 비활성화
     )
