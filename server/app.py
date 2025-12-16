@@ -6,8 +6,9 @@ import subprocess
 import signal
 import time
 import os
+import networkx as nx
+import pickle
 import config as cfg
-import graph_builder
 import path_finder
 
 # 로깅 설정
@@ -272,9 +273,23 @@ def kill_process_on_port(port):
 # 서버 시작 전 그래프 초기화 (Dijkstra 기반)
 @app.listener("before_server_start")
 async def setup_graph(app, loop):
-    print("워커 프로세스 시작: 그래프 초기화 중...")
-    graph = graph_builder.build_graph()
-    print(f"그래프 초기화 완료: {graph.number_of_nodes()} 노드, {graph.number_of_edges()} 엣지")
+    print("워커 프로세스 시작: 그래프 스냅샷 로드 중...")
+    graph_pickle = cfg.graph_pickle_file
+
+    if not graph_pickle or not os.path.exists(graph_pickle):
+        msg = f"그래프 스냅샷을 찾을 수 없습니다: {graph_pickle}. 먼저 스냅샷을 생성하세요."
+        print(msg)
+        raise RuntimeError(msg)
+
+    try:
+        with open(graph_pickle, "rb") as f:
+            graph = pickle.load(f)
+        print(f"그래프 스냅샷 로드 완료: {graph.number_of_nodes()} 노드, {graph.number_of_edges()} 엣지")
+    except Exception as e:
+        msg = f"그래프 스냅샷 로드 실패: {e}"
+        print(msg)
+        raise
+
     app.ctx.graph = graph
 
 # main 문 실행
