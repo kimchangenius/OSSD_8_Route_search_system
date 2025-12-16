@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Install dependencies (Dockerfile이 backend/server 안에 있으므로 상대 경로 사용)
 COPY server/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --no-compile -r requirements.txt
 
 # Copy backend source
 COPY server/ .
