@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import { AppNode } from "./types"; // 1단계에서 만든 타입 임포트
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001/api";
+// 배포 환경 기본값: Render 백엔드 HTTPS 엔드포인트
+const API_URL = process.env.REACT_APP_API_URL || "https://ossd-8-route-search-system.onrender.com/api";
 
 export function useRoutePath(
   startNode: AppNode | null,

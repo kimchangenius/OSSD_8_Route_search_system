@@ -117,7 +117,7 @@ function App() {
   const setRoadRef = useCallback((m: LeafletMap | null) => { roadRef.current = m; }, []);
   const canvasLayerRef = useRef<any>(null);
 
-  const [mapStyle, setMapStyle] = useState<string>("black");
+  const [mapStyle, setMapStyle] = useState<string>("basic");
   const [mapCenter, setMapCenter] = useState<LatLngExpression>([37.65146111, 127.0583889]); 
   const [mapZoom, setMapZoom] = useState<number>(15);
   const [initialBounds, setInitialBounds] = useState<LatLngBoundsExpression | null>(null);
