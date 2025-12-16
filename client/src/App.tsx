@@ -19,7 +19,8 @@ import { AppNode } from "./types";
 
 import "./App.css";
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001/api";
+// Render 백엔드 기본 URL (환경변수 미설정 시 Render로 연결)
+const API_URL = process.env.REACT_APP_API_URL || "https://ossd-8-route-search-system.onrender.com/api";
 const Maptiler_Key = "DFFxHHmQRoAl3CPIlnBb";
 const mapTilerStyles: Record<string, string> = {
   black: `http://223.194.46.216:8665/api/maps/positron/{z}/{x}/{y}.png`,
