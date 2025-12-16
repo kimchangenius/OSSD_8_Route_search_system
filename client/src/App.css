@@ -29,6 +29,45 @@ html, body, #root{
   height: 100%;
 }
 
+/* 경로 계산 로딩 오버레이 */
+.route-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+}
+.route-loading-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 18px 22px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+  justify-content: center;
+}
+.route-loading-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #4CAF50;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+.route-loading-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 .error-message {
   color: red;
   text-align: center;

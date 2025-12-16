@@ -13,17 +13,20 @@ export function useRoutePath(
 ) {
   const [routeModes, setRouteModes] = useState<any | null>(null);
   const [defaultMode, setDefaultMode] = useState<"walk" | "bike" | "ebike" | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // enabled && start/dest 있을 때 모드별 경로 요청
   useEffect(() => {
     if (!enabled || !startNode || !destNode) {
       setRouteModes(null);
       setDefaultMode(null);
+      setIsLoading(false);
       return;
     }
 
     const fetchModes = async () => {
       try {
+        setIsLoading(true);
         console.log("[find-path-modes] request ->", {
           start_id: startNode.id,
           goal_id: destNode.id,
@@ -44,11 +47,13 @@ export function useRoutePath(
         console.error(e);
         setRouteModes(null);
         setDefaultMode(null);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchModes();
   }, [enabled, startNode, destNode]);
 
-  return { routeModes, defaultMode };
+  return { routeModes, defaultMode, isLoading };
 }

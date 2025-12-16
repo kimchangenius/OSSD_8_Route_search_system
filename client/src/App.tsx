@@ -164,7 +164,7 @@ function App() {
   const [viaNodes, setViaNodes] = useState<AppNode[]>([]);
   const [routeRequested, setRouteRequested] = useState<boolean>(false);
   const [selectedMode, setSelectedMode] = useState<"walk" | "bike" | "ebike" | null>(null);
-  const { routeModes, defaultMode } = useRoutePath(startNode, destNode, viaNodes, routeRequested);
+  const { routeModes, defaultMode, isLoading: isRouteLoading } = useRoutePath(startNode, destNode, viaNodes, routeRequested);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -436,6 +436,15 @@ function App() {
               />
 
               <ScaleControl position="bottomright" imperial={false} />
+
+              {routeRequested && isRouteLoading && (
+                <div className="route-loading-overlay">
+                  <div className="route-loading-card">
+                    <div className="route-loading-spinner" />
+                    <div className="route-loading-text">경로 계산 중...</div>
+                  </div>
+                </div>
+              )}
 
               {routeRequested && routeModes &&
                 (["walk", "bike", "ebike"] as const).map((mode) => {
