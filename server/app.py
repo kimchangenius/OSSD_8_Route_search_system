@@ -294,13 +294,8 @@ async def setup_graph(app, loop):
 
 # main 문 실행
 if __name__ == '__main__':
-    # 포트 확인 및 정리
-    kill_process_on_port(port)
-    
     print(f"{'='*60}")
     print(f"🚀 REST API 서버 시작")
-    print(f"{'='*60}")
-    print(f"📍 URL: http://localhost:{port}")
     print(f"{'='*60}\n")
     
     print("서버 시작 중... (그래프는 워커 프로세스에서 로드됩니다)\n")
