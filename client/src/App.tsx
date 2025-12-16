@@ -387,7 +387,15 @@ function App() {
 
   return (
     <div className="container">
-      {!isConnected ? <div><h1 className="error-message">Not connected to server</h1></div> : (
+      {!isConnected ? (
+        <div className="connecting-screen">
+          <div className="connecting-card">
+            <div className="connecting-spinner" />
+            <div className="connecting-text">서버에 접속 중입니다...</div>
+            <div className="connecting-sub">잠시만 기다려주세요</div>
+          </div>
+        </div>
+      ) : (
         <div className="main-layout">
           <Sidebar 
             allNodes={allNodes}

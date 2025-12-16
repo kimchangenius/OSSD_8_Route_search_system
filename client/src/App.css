@@ -75,6 +75,42 @@ html, body, #root{
   margin-top: 50px;
 }
 
+.connecting-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f8fa;
+  height: 100%;
+}
+.connecting-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 22px 26px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.connecting-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #03C75A;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+.connecting-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: #333;
+}
+.connecting-sub {
+  font-size: 13px;
+  color: #777;
+}
+
 /* --- 좌측 상단 검색 컨트롤 --- */
 .controls-left {
   position: absolute;
