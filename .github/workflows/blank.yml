@@ -1,0 +1,14 @@
+name: Ping Render
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jops:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render backend health
+        run:  |
+          curl -I --max-time 10 https://ossd-8-route-search-system.onrender.com/api/health || true
